@@ -22,9 +22,9 @@ import java.util.TimerTask;
  */
 
 public class MediaService extends Service {
-
     private static final String TAG = "Media Service";
     private Timer timer;
+    private MediaUtility mUtility;
 
     @Nullable
     @Override
@@ -42,6 +42,7 @@ public class MediaService extends Service {
     @Override
     public void onCreate() {
         Log.d(TAG, "On Service Create");
+        this.mUtility = new MediaUtility(this);
     }
 
     @Override
@@ -57,7 +58,7 @@ public class MediaService extends Service {
     }
 
     private void processMedia() {
-        Cursor imgCursor = MediaUtility.fetchMediaStore(this);
+        Cursor imgCursor = mUtility.fetchMediaStore();
         Log.d(TAG, "Cursor Count : " + imgCursor.getCount());
         int count = 0;
         if( imgCursor != null && imgCursor.getCount() > 0) {
@@ -69,10 +70,7 @@ public class MediaService extends Service {
                     String id = imgCursor.getString(imgCursor.getColumnIndex(MediaStore.Images.ImageColumns._ID));
 
                     Log.d(TAG, count + " : " +id);
-                    MediaUtility.storeImage(this, MediaUtility.compressImage(this, imgPath), id);
-
-                    //Bitmap bmp = MediaUtility.compressImage(this, id);
-                    //Log.d(TAG, "Size: "+ bmp.getByteCount());
+                    mUtility.compressAndStore(imgPath);
                 }
             }finally {
                 imgCursor.close();

@@ -8,27 +8,25 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
 
+import com.example.pappagift.mediastore.MediaConfig;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-import id.zelory.compressor.Compressor;
-
-/**
- * Created by PAPPA GIFT on 12-Mar-17.
- */
+import io.reactivex.Observable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 
 public class MediaUtility {
     private static final String TAG = "Media Utility";
+    private Context context;
 
-    public MediaUtility() {
-
+    public MediaUtility(Context context) {
+        this.context = context;
     }
 
-
-
-    public static Cursor fetchMediaStore(Context context) {
+    public Cursor fetchMediaStore() {
         Uri extMediaUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
         String projection[] = {
                 MediaStore.Images.ImageColumns._ID,
@@ -46,7 +44,7 @@ public class MediaUtility {
         );
     }
 
-    public static Bitmap getBitmapFromUri(Context context, String strUri) {
+    public Bitmap getBitmapFromUri(String strUri) {
         Uri uri = Uri.parse("file://" + strUri);
         try {
             Bitmap bm = MediaStore.Images.Media.getBitmap(context.getContentResolver(), uri);
@@ -58,8 +56,23 @@ public class MediaUtility {
         return null;
     }
 
-    public static Bitmap compressImage(Context context, String strUri) {
-        return Compressor.getDefault(context).compressToBitmap(new File(strUri));
+    public File compressImage(String strUri) {
+        return ImageUtility.compressToFile(
+                context,
+                new File(strUri),
+                1024,
+                768,
+                Bitmap.CompressFormat.JPEG,
+                Bitmap.Config.ARGB_8888,
+                75,
+                MediaConfig.getFileStoragePath(context, true)
+        );
+    }
+
+    public void compressAndStore(String uri){
+        Observable.just(compressImage(uri))
+                .subscribeOn(AndroidSchedulers.mainThread())
+                .subscribe();
     }
 
     /**
@@ -67,9 +80,10 @@ public class MediaUtility {
      * @param image [Image Bitmap]
      * @return file [File of the stored bitmap]
      * */
-    public static File storeImage(Context cx, Bitmap image, String id) {
-        String path2 = Environment.getExternalStorageDirectory().getAbsolutePath()+"/Images";
-        File mediaStorageDir = new File(path2);
+    public File storeImage(Bitmap image, String id) {
+        String storagePath = Environment.getExternalStorageDirectory().getAbsolutePath()+"/MediaServer/Images";
+        Log.d(TAG, "Storage Path: " + storagePath);
+        File mediaStorageDir = new File(storagePath);
 
         if (! mediaStorageDir.exists()){
             if (! mediaStorageDir.mkdirs()){
