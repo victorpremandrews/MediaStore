@@ -47,7 +47,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         btnStartService.setOnClickListener(this);
         btnStopService.setOnClickListener(this);
-        Log.d(TAG, Environment.getExternalStorageDirectory().getAbsolutePath()+"/Images");
         checkPerms();
     }
 

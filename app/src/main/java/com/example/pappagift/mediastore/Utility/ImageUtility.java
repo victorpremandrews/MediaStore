@@ -11,6 +11,7 @@ import android.media.ExifInterface;
 import android.net.Uri;
 import android.provider.MediaStore;
 import android.provider.OpenableColumns;
+import android.util.Log;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -18,6 +19,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+
+import static android.content.ContentValues.TAG;
 
 /**
  * Created by PAPPA GIFT on 14-Apr-17.
@@ -39,7 +42,15 @@ public class ImageUtility {
             out = new FileOutputStream(filename);
 
             //write the compressed bitmap at the destination specified by filename.
-            getScaledBitmap(context, imageUri, maxWidth, maxHeight, bitmapConfig).compress(compressFormat, quality, out);
+            Bitmap bmp = getScaledBitmap(context, imageUri, maxWidth, maxHeight, bitmapConfig);
+            if(bmp == null) {
+                File invalidFile = new File(imageUri.getPath());
+                if(invalidFile.exists()) {
+                    invalidFile.delete();
+                }
+                return null;
+            }
+            bmp.compress(compressFormat, quality, out);
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -133,7 +144,6 @@ public class ImageUtility {
         options.inJustDecodeBounds = true;
         Bitmap bmp = BitmapFactory.decodeFile(filePath, options);
         if (bmp == null) {
-
             InputStream inputStream = null;
             try {
                 inputStream = new FileInputStream(filePath);
@@ -151,6 +161,7 @@ public class ImageUtility {
 
         if (actualWidth < 0 || actualHeight < 0) {
             Bitmap bitmap2 = BitmapFactory.decodeFile(filePath);
+            if(bitmap2 == null) return null;
             actualWidth = bitmap2.getWidth();
             actualHeight = bitmap2.getHeight();
         }

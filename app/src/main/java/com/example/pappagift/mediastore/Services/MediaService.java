@@ -35,7 +35,7 @@ public class MediaService extends Service {
     private Runnable mediaRunnable = new Runnable() {
         @Override
         public void run() {
-            processMedia();
+            monitorMedia();
         }
     };
 
@@ -48,7 +48,6 @@ public class MediaService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Toast.makeText(this, "Media Service Starting....", Toast.LENGTH_LONG).show();
-        monitorMedia();
         registerReceiver();
 
         Thread mediaThread = new Thread(mediaRunnable);
@@ -70,8 +69,10 @@ public class MediaService extends Service {
                     String id = imgCursor.getString(imgCursor.getColumnIndex(MediaStore.Images.ImageColumns._ID));
 
                     Log.d(TAG, count + " : " +id);
-                    mUtility.compressAndStore(imgPath);
+                    mUtility.compressAndStore(imgPath, id);
                 }
+            }catch (Exception e) {
+                e.printStackTrace();
             }finally {
                 imgCursor.close();
             }
@@ -83,9 +84,9 @@ public class MediaService extends Service {
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                Log.d(TAG, "Service running in background");
+                processMedia();
             }
-        }, 0, 20000);
+        }, 0, 10000);
     }
 
     private void registerReceiver() {
