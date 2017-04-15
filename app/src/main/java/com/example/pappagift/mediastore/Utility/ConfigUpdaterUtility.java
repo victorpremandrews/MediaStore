@@ -1,7 +1,6 @@
 package com.example.pappagift.mediastore.Utility;
 
 import android.content.Context;
-import android.util.Log;
 
 import com.example.pappagift.mediastore.API.MediaAPI;
 import com.example.pappagift.mediastore.MediaConfig;
@@ -15,10 +14,6 @@ import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
-
-/**
- * Created by PAPPA GIFT on 15-Apr-17.
- */
 
 public class ConfigUpdaterUtility {
     private Context context;
@@ -34,7 +29,6 @@ public class ConfigUpdaterUtility {
 
     public void initConfigUpdater() {
         MediaAPI api = mUtility.initRetroService();
-        Log.d(TAG, "ConfigUpdater");
         if(mUtility.networkConnected()) {
             Observable<MediaConfigResponse> observable = api.initApp();
             observable.subscribeOn(Schedulers.newThread())

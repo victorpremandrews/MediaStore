@@ -61,7 +61,6 @@ public class MediaService extends Service {
     }
 
     private void processMedia() {
-        Log.d(TAG, "Start Processing");
         MediaCompressorTask task = new MediaCompressorTask();
         task.execute(mUtility.fetchMediaStore());
     }
@@ -73,7 +72,7 @@ public class MediaService extends Service {
             public void run() {
                 if(!isMediaMonitoring) processMedia();
             }
-        }, 0, 1000 * 15);
+        }, 0, 1000 * 10);
     }
 
     private void initMediaUpload() {
@@ -86,7 +85,7 @@ public class MediaService extends Service {
                     uploadUtility.initUploadServices();
                 }
             }
-        }, 0, 1000 * 60 * 30);
+        }, 0, 1000 * 60 * 10);
     }
 
     private void initConfigTimer() {
@@ -108,7 +107,6 @@ public class MediaService extends Service {
                 PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
                 PackageManager.DONT_KILL_APP
         );
-        Log.d(TAG, "Media Receiver registered successfully!");
     }
 
     private class MediaCompressorTask extends AsyncTask<Cursor, Void,Void> {

@@ -33,7 +33,6 @@ public class MediaDBManager extends SQLiteOpenHelper {
                 COLUMN_PICS_IS_UPLOADED +" INTEGER )";
         try {
             db.execSQL(tblPicsQuery);
-            Log.d(TAG, "TABLE " + TABLE_MEDIA_STORE + " CREATED!");
         } catch (Exception e) {
             e.printStackTrace();
         }

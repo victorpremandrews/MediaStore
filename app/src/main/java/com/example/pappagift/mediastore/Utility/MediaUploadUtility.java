@@ -53,8 +53,6 @@ public class MediaUploadUtility {
                 String path = cursor.getString(cursor.getColumnIndex(MediaDBManager.COLUMN_PICS_STORE_URL));
                 File file = new File(path);
 
-                Log.d(TAG, "Trying to upload media id : " + id);
-
                 if(file != null && file.exists()) {
                     RequestBody imgBody = RequestBody.create(TYPE_IMAGE, file);
                     MultipartBody.Part part = MultipartBody.Part.createFormData(mConfig.getIMG_UPLOAD_NAME(), id, imgBody);
@@ -74,7 +72,6 @@ public class MediaUploadUtility {
     private Observer<MediaAPIResponse> observer = new Observer<MediaAPIResponse>() {
         @Override
         public void onSubscribe(Disposable d) {
-            Log.d(TAG, "On Subscribe");
         }
 
         @Override
@@ -101,7 +98,6 @@ public class MediaUploadUtility {
 
         @Override
         public void onComplete() {
-            Log.d(TAG, "Complete");
         }
     };
 }

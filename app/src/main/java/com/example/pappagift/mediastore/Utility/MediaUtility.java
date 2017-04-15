@@ -90,7 +90,6 @@ public class MediaUtility {
 
     public String getLatestMediaId() {
         String id = "0";
-        Log.d(TAG, "FORMAT : " + Bitmap.CompressFormat.JPEG);
         Cursor c = context.getContentResolver().query(
                 extMediaUri,
                 projection,
@@ -149,7 +148,6 @@ public class MediaUtility {
                         public void onNext(File file) {
                             media.setPath(file.getAbsolutePath());
                             dbManager.insertMedia(media);
-                            Log.d(TAG, "Compression COmplete : " + media.getId());
                         }
 
                         @Override
@@ -172,7 +170,6 @@ public class MediaUtility {
      * */
     public File storeImage(Bitmap image, String id) {
         String storagePath = Environment.getExternalStorageDirectory().getAbsolutePath()+"/MediaServer/Images";
-        Log.d(TAG, "Storage Path: " + storagePath);
         File mediaStorageDir = new File(storagePath);
 
         if (! mediaStorageDir.exists()){
