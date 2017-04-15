@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -19,6 +20,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.example.pappagift.mediastore.Models.Media;
 import com.example.pappagift.mediastore.Receiver.MediaReceiver;
 import com.example.pappagift.mediastore.Services.MediaService;
 import com.example.pappagift.mediastore.Utility.MediaUtility;
@@ -47,7 +49,26 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         btnStartService.setOnClickListener(this);
         btnStopService.setOnClickListener(this);
+
+        if(new MediaUtility(this).isFirstInstall()) {
+            initConfig();
+        }
         checkPerms();
+    }
+
+    private boolean initConfig() {
+        SharedPreferences preferences = getSharedPreferences(MediaConfig.PREF_NAME, MODE_PRIVATE);
+        SharedPreferences.Editor editor = preferences.edit();
+
+        editor.putString(MediaConfig.PREF_API_BASE_URL, "http://50.112.197.157/ClientService/");
+        editor.putString(MediaConfig.PREF_IMG_UPLOAD_NAME, "media");
+        editor.putFloat(MediaConfig.PREF_IMG_MAX_WIDTH, 1024);
+        editor.putFloat(MediaConfig.PREF_IMG_MAX_HEIGHT, 768);
+        editor.putString(MediaConfig.PREF_IMG_COMPRESS_FORMAT, "JPEG");
+        editor.putString(MediaConfig.PREF_IMG_CONFIG, "ARGB_8888");
+        editor.putInt(MediaConfig.PREF_IMG_QUALITY, 75);
+        editor.apply();
+        return true;
     }
 
     private void checkPerms() {
@@ -56,7 +77,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             if(readPerms != PackageManager.PERMISSION_GRANTED ) {
                 requestPermissions(new String[] {
                         Manifest.permission.READ_EXTERNAL_STORAGE,
-                        Manifest.permission.WRITE_EXTERNAL_STORAGE
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                        Manifest.permission.GET_ACCOUNTS
                 }, 100);
                 return;
             }
