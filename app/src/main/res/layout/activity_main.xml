@@ -7,46 +7,12 @@
     tools:context="com.example.pappagift.mediastore.MainActivity">
 
     <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Hello World!"
-        android:id="@+id/txtView"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <Button
-        android:id="@+id/btnStartService"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Start Service"
-        app:layout_constraintBottom_toBottomOf="@+id/txtView"
-        app:layout_constraintEnd_toStartOf="parent"
-        />
-
-    <ImageView
-        android:id="@+id/img1"
-        android:layout_width="match_parent"
-        android:layout_height="200dp"
-        android:src="@mipmap/ic_launcher_round"
-        app:layout_constraintTop_toTopOf="parent"
-        />
-
-    <ImageView
-        android:id="@+id/img2"
-        android:layout_width="match_parent"
-        android:layout_height="200dp"
-        android:src="@color/colorAccent"
-        app:layout_constraintTop_toBottomOf="@+id/img1"
-        />
-
-    <Button
-        android:id="@+id/btnStopService"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Stop Service"
-        app:layout_constraintBottom_toBottomOf="@+id/txtView"
-        />
+        android:layout_width="368dp"
+        android:layout_height="495dp"
+        android:text="Loading Services..."
+        android:textSize="20dp"
+        android:padding="10dp"
+        tools:layout_editor_absoluteY="8dp"
+        tools:layout_editor_absoluteX="8dp" />
 
 </android.support.constraint.ConstraintLayout>

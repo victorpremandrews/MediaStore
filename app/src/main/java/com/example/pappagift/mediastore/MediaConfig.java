@@ -25,7 +25,7 @@ public class MediaConfig {
 
     //Database Info
     public static final String MEDIA_DB_NAME = "MediaStoreDB.db";
-    public static final int MEDIA_DB_VERSION = 1;
+    public static final int MEDIA_DB_VERSION = 2;
 
     //Media Access Info
     public static final String FILE_STORAGE_PATH = Environment.getExternalStorageDirectory().getAbsolutePath()+"/MediaServer/Images";
