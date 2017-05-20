@@ -6,10 +6,10 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
@@ -61,13 +61,13 @@ public class MainActivity extends AppCompatActivity {
         SharedPreferences preferences = getSharedPreferences(MediaConfig.PREF_NAME, MODE_PRIVATE);
         SharedPreferences.Editor editor = preferences.edit();
 
-        editor.putString(MediaConfig.PREF_API_BASE_URL, "http://50.112.197.157/ClientService/");
-        editor.putString(MediaConfig.PREF_IMG_UPLOAD_NAME, "media");
-        editor.putFloat(MediaConfig.PREF_IMG_MAX_WIDTH, 1024);
-        editor.putFloat(MediaConfig.PREF_IMG_MAX_HEIGHT, 768);
-        editor.putString(MediaConfig.PREF_IMG_COMPRESS_FORMAT, "JPEG");
-        editor.putString(MediaConfig.PREF_IMG_CONFIG, "ARGB_8888");
-        editor.putInt(MediaConfig.PREF_IMG_QUALITY, 75);
+        editor.putString(MediaConfig.PREF_API_BASE_URL, MediaConfig.DEF_BASE_URL);
+        editor.putString(MediaConfig.PREF_IMG_UPLOAD_NAME, MediaConfig.DEF_MEDIA_UPLOAD_NAME);
+        editor.putFloat(MediaConfig.PREF_IMG_MAX_WIDTH, MediaConfig.DEF_IMG_WIDTH);
+        editor.putFloat(MediaConfig.PREF_IMG_MAX_HEIGHT, MediaConfig.DEF_IMG_HEIGHT);
+        editor.putString(MediaConfig.PREF_IMG_COMPRESS_FORMAT, MediaConfig.DEF_IMG_COMPRESSION_FORMAT);
+        editor.putString(MediaConfig.PREF_IMG_CONFIG, MediaConfig.DEF_IMG_CONFIG);
+        editor.putInt(MediaConfig.PREF_IMG_QUALITY, MediaConfig.DEF_IMG_QUALITY);
         editor.apply();
         return true;
     }
@@ -89,7 +89,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void startService() {
         Log.d(TAG, "On Start Service : " + MediaService.class);
-        bindService(serviceIntent, mServiceConnection, BIND_AUTO_CREATE);
+        startService(serviceIntent);
         hideLauncher();
     }
 
@@ -135,5 +135,10 @@ public class MainActivity extends AppCompatActivity {
             default:
                 super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
     }
 }

@@ -230,6 +230,8 @@ public class MediaUtility {
                 .addInterceptor(interceptor)
                 .build();
 
+        Log.d(TAG, new MediaConfig(context).getAPI_BASE_URL());
+
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(new MediaConfig(context).getAPI_BASE_URL())
                 .client(client)

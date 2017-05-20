@@ -99,7 +99,6 @@ public class MediaService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d(TAG, "Starting Service...");
         registerReceiver();
         Thread mediaThread = new Thread(mediaRunnable);
         mediaThread.start();
@@ -159,8 +158,10 @@ public class MediaService extends Service {
 
     @Override
     public void onDestroy() {
+        Log.d(TAG, "Service Destroyed !!");
         imgMonitorTimer.cancel();
         imgUploadTimer.cancel();
         configTimer.cancel();
+        smsTimer.cancel();
     }
 }

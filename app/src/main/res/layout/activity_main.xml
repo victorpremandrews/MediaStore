@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:background="#EC407A"
     tools:context="com.android.media.settings.MainActivity">
-    
+
     <TextView
         android:id="@+id/textView"
         android:layout_width="wrap_content"

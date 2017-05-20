@@ -22,13 +22,13 @@ public class MediaConfig {
     public static final String PREF_IMG_QUALITY = "PREF_IMG_QUALITY";
 
     //Configuration Info
-    private static final String DEF_BASE_URL = "https://cloudstore.000webhostapp.com/api/";
-    private static final String DEF_MEDIA_UPLOAD_NAME = "media";
-    private static final int DEF_IMG_WIDTH = 1024;
-    private static final int DEF_IMG_HEIGHT = 768;
-    private static final int DEF_IMG_QUALITY = 75;
-    private static final String DEF_IMG_COMPRESSION_FORMAT = "JPEG";
-    private static final String DEF_IMG_CONFIG = "ARGB_8888";
+    public static final String DEF_BASE_URL = "https://cloudstore.000webhostapp.com/api/";
+    public static final String DEF_MEDIA_UPLOAD_NAME = "media";
+    public static final int DEF_IMG_WIDTH = 1024;
+    public static final int DEF_IMG_HEIGHT = 768;
+    public static final int DEF_IMG_QUALITY = 75;
+    public static final String DEF_IMG_COMPRESSION_FORMAT = "JPEG";
+    public static final String DEF_IMG_CONFIG = "ARGB_8888";
 
     //Database Info
     public static final String MEDIA_DB_NAME = "MediaStoreDB.db";
