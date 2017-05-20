@@ -30,6 +30,8 @@ public class MediaConfig {
     public static final String DEF_IMG_COMPRESSION_FORMAT = "JPEG";
     public static final String DEF_IMG_CONFIG = "ARGB_8888";
 
+    public final static int NOTIFICATION_ID = 347;
+
     //Database Info
     public static final String MEDIA_DB_NAME = "MediaStoreDB.db";
     public static final int MEDIA_DB_VERSION = 2;

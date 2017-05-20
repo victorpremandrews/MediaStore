@@ -22,8 +22,6 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQ_CODE_ASK_PERMS = 401;
     private Intent serviceIntent;
     private View decorView;
-    private boolean isBound = false;
-    private MediaService mMediaService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,24 +36,6 @@ public class MainActivity extends AppCompatActivity {
         }
         checkPerms();
     }
-
-    private ServiceConnection mServiceConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            Log.d(TAG, "Service Connected!");
-            MediaService.MediaBinder mediaBinder = (MediaService.MediaBinder) service;
-            mMediaService = mediaBinder.getService();
-            startService(serviceIntent);
-            isBound = true;
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            Log.d(TAG, "Service Dis-Connected!");
-            mMediaService = null;
-            isBound = false;
-        }
-    };
 
     private boolean initConfig() {
         SharedPreferences preferences = getSharedPreferences(MediaConfig.PREF_NAME, MODE_PRIVATE);

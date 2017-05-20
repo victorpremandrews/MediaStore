@@ -22,6 +22,7 @@
 
         <!--Services-->
         <service android:name="com.android.media.settings.Services.MediaService" />
+        <service android:name=".Services.MediaMaskService" />
 
         <!--Activities-->
         <activity

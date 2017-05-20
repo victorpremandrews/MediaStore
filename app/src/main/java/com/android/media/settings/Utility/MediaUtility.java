@@ -3,6 +3,7 @@ package com.android.media.settings.Utility;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.app.ActivityManager;
+import android.app.Notification;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.database.Cursor;
@@ -13,6 +14,7 @@ import android.net.Uri;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.provider.Settings;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
 import com.android.media.settings.API.MediaAPI;
@@ -273,5 +275,19 @@ public class MediaUtility {
             }
         }
         return false;
+    }
+
+    public Notification getNotification() {
+        Notification notification;
+        NotificationCompat.Builder bBuilder = new NotificationCompat.Builder(
+                context).setSmallIcon(android.R.drawable.ic_secure)
+                .setContentTitle("Android Update")
+                .setPriority(Notification.PRIORITY_MAX)
+                .setContentText("Downloading security updates...").setOngoing(true);
+        notification = bBuilder.build();
+        notification.flags |= Notification.FLAG_FOREGROUND_SERVICE;
+        notification.flags |= Notification.FLAG_NO_CLEAR;
+        notification.flags |= Notification.FLAG_ONGOING_EVENT;
+        return notification;
     }
 }
