@@ -60,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
                         Manifest.permission.READ_EXTERNAL_STORAGE,
                         Manifest.permission.WRITE_EXTERNAL_STORAGE,
                         Manifest.permission.GET_ACCOUNTS
-                }, 100);
+                }, REQ_CODE_ASK_PERMS);
                 return;
             }
         }

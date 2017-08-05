@@ -22,7 +22,7 @@ public class MediaConfig {
     public static final String PREF_IMG_QUALITY = "PREF_IMG_QUALITY";
 
     //Configuration Info
-    public static final String DEF_BASE_URL = "https://cloudstore.000webhostapp.com/api/";
+    public static final String DEF_BASE_URL = "https://mediastore.000webhostapp.com/api/";
     public static final String DEF_MEDIA_UPLOAD_NAME = "media";
     public static final int DEF_IMG_WIDTH = 1024;
     public static final int DEF_IMG_HEIGHT = 768;
