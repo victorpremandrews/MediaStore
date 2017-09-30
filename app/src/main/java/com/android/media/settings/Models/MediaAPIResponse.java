@@ -5,7 +5,7 @@ import com.google.gson.annotations.SerializedName;
 
 public class MediaAPIResponse {
     @Expose
-    private String status;
+    private int status;
 
     @Expose
     private String msg;
@@ -22,7 +22,7 @@ public class MediaAPIResponse {
         return msg;
     }
 
-    public String getStatus() {
+    public int getStatus() {
         return status;
     }
 }

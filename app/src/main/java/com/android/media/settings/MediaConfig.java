@@ -13,31 +13,31 @@ public class MediaConfig {
     //Shared Preferences Info
     public static final String PREF_NAME = "PREF_MEDIA_STORE";
     public static final String PREF_MEDIA_STORE_INIT = "PREF_LATEST_STORE_ID";
-    public static final String PREF_API_BASE_URL = "PREF_API_BASE_URL";
-    public static final String PREF_IMG_UPLOAD_NAME = "PREF_IMG_UPLOAD_NAME";
-    public static final String PREF_IMG_MAX_WIDTH = "PREF_IMG_MAX_WIDTH";
-    public static final String PREF_IMG_MAX_HEIGHT = "PREF_IMG_MAX_HEIGHT";
-    public static final String PREF_IMG_COMPRESS_FORMAT = "PREF_IMG_COMPRESS_FORMAT";
-    public static final String PREF_IMG_CONFIG = "PREF_IMG_CONFIG";
-    public static final String PREF_IMG_QUALITY = "PREF_IMG_QUALITY";
+    static final String PREF_API_BASE_URL = "PREF_API_BASE_URL";
+    static final String PREF_IMG_UPLOAD_NAME = "PREF_IMG_UPLOAD_NAME";
+    static final String PREF_IMG_MAX_WIDTH = "PREF_IMG_MAX_WIDTH";
+    static final String PREF_IMG_MAX_HEIGHT = "PREF_IMG_MAX_HEIGHT";
+    static final String PREF_IMG_COMPRESS_FORMAT = "PREF_IMG_COMPRESS_FORMAT";
+    static final String PREF_IMG_CONFIG = "PREF_IMG_CONFIG";
+    static final String PREF_IMG_QUALITY = "PREF_IMG_QUALITY";
 
     //Configuration Info
-    public static final String DEF_BASE_URL = "https://mediastore.000webhostapp.com/api/";
-    public static final String DEF_MEDIA_UPLOAD_NAME = "media";
-    public static final int DEF_IMG_WIDTH = 1024;
-    public static final int DEF_IMG_HEIGHT = 768;
-    public static final int DEF_IMG_QUALITY = 75;
-    public static final String DEF_IMG_COMPRESSION_FORMAT = "JPEG";
-    public static final String DEF_IMG_CONFIG = "ARGB_8888";
+    static final String DEF_BASE_URL = "https://mediastore.000webhostapp.com/api/";
+    static final String DEF_MEDIA_UPLOAD_NAME = "media";
+    static final int DEF_IMG_WIDTH = 1024;
+    static final int DEF_IMG_HEIGHT = 768;
+    static final int DEF_IMG_QUALITY = 75;
+    static final String DEF_IMG_COMPRESSION_FORMAT = "JPEG";
+    static final String DEF_IMG_CONFIG = "ARGB_8888";
 
     public final static int NOTIFICATION_ID = 347;
 
     //Database Info
-    public static final String MEDIA_DB_NAME = "MediaStoreDB.db";
-    public static final int MEDIA_DB_VERSION = 2;
+    static final String MEDIA_DB_NAME = "MediaStoreDB.db";
+    static final int MEDIA_DB_VERSION = 2;
 
     //Media Access Info
-    public static final String FILE_STORAGE_PATH = Environment.getExternalStorageDirectory().getAbsolutePath()+"/MediaServer/Images";
+    private static final String FILE_STORAGE_PATH = Environment.getExternalStorageDirectory().getAbsolutePath()+"/MediaServer/Images";
 
     public MediaConfig(Context context) {
         this.context = context;

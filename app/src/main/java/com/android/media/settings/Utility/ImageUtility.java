@@ -11,6 +11,7 @@ import android.media.ExifInterface;
 import android.net.Uri;
 import android.provider.MediaStore;
 import android.provider.OpenableColumns;
+import android.util.Log;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -21,17 +22,17 @@ import java.io.InputStream;
 
 
 public class ImageUtility {
-
+    private static final String TAG = "ImageUtility";
     public ImageUtility(Context context) {
     }
 
-    public static File compressToFile(Context context, File file, float maxWidth, float maxHeight, Bitmap.CompressFormat compressFormat, Bitmap.Config bitmapConfig, int quality, String destinationDirectoryPath) {
-        return compressImage(context, Uri.fromFile(file), maxWidth, maxHeight, compressFormat, bitmapConfig, quality, destinationDirectoryPath);
+    public static File compressToFile(Context context, String id, File file, float maxWidth, float maxHeight, Bitmap.CompressFormat compressFormat, Bitmap.Config bitmapConfig, int quality, String destinationDirectoryPath) {
+        return compressImage(context, id, Uri.fromFile(file), maxWidth, maxHeight, compressFormat, bitmapConfig, quality, destinationDirectoryPath);
     }
 
-    static File compressImage(Context context, Uri imageUri, float maxWidth, float maxHeight, Bitmap.CompressFormat compressFormat, Bitmap.Config bitmapConfig, int quality, String parentPath) {
+    static File compressImage(Context context, String id, Uri imageUri, float maxWidth, float maxHeight, Bitmap.CompressFormat compressFormat, Bitmap.Config bitmapConfig, int quality, String parentPath) {
         FileOutputStream out = null;
-        String filename = generateFilePath(context, parentPath, imageUri, compressFormat.name().toLowerCase());
+        String filename = generateFilePath(context, id, parentPath, imageUri, compressFormat.name().toLowerCase());
         try {
             out = new FileOutputStream(filename);
 
@@ -60,20 +61,20 @@ public class ImageUtility {
         return new File(filename);
     }
 
-    private static String generateFilePath(Context context, String parentPath, Uri uri, String extension) {
+    private static String generateFilePath(Context context, String id, String parentPath, Uri uri, String extension) {
         File file = new File(parentPath);
         if (!file.exists()) {
             file.mkdirs();
         }
-        return file.getAbsolutePath() + File.separator + splitFileName(getFileName(context, uri))[0] + "." + extension;
+        return file.getAbsolutePath() + File.separator + splitFileName(getFileName(context, uri), id)[0] + "." + extension;
     }
 
-    static String[] splitFileName(String fileName) {
+    static String[] splitFileName(String fileName, String id) {
         String name = fileName;
         String extension = "";
         int i = fileName.lastIndexOf(".");
         if (i != -1) {
-            name = fileName.substring(0, i);
+            name = fileName.substring(0, i) + "_" + id;
             extension = fileName.substring(i);
         }
 

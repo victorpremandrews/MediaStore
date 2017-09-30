@@ -16,7 +16,6 @@ public class MediaCompressorUtility {
     public MediaCompressorUtility(Context context) {
         mUtility = new MediaUtility(context);
         this.context = context;
-        initImageCompression();
     }
 
     public void initImageCompression() {

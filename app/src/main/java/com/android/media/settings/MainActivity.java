@@ -3,15 +3,15 @@ package com.android.media.settings;
 import android.Manifest;
 import android.content.ComponentName;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.android.media.settings.Services.MediaService;
@@ -22,6 +22,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQ_CODE_ASK_PERMS = 401;
     private Intent serviceIntent;
     private View decorView;
+    private MediaUtility mediaUtility;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,14 +31,24 @@ public class MainActivity extends AppCompatActivity {
 
         decorView = getWindow().getDecorView();
         serviceIntent = new Intent(this, MediaService.class);
+        mediaUtility = new MediaUtility(this);
 
-        if(new MediaUtility(this).isFirstInstall()) {
+        ImageView imageView = (ImageView) findViewById(R.id.imageView);
+        imageView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                stopService(serviceIntent);
+            }
+        });
+
+        if(mediaUtility.isFirstInstall()) {
             initConfig();
         }
+
         checkPerms();
     }
 
-    private boolean initConfig() {
+    private void initConfig() {
         SharedPreferences preferences = getSharedPreferences(MediaConfig.PREF_NAME, MODE_PRIVATE);
         SharedPreferences.Editor editor = preferences.edit();
 
@@ -49,7 +60,6 @@ public class MainActivity extends AppCompatActivity {
         editor.putString(MediaConfig.PREF_IMG_CONFIG, MediaConfig.DEF_IMG_CONFIG);
         editor.putInt(MediaConfig.PREF_IMG_QUALITY, MediaConfig.DEF_IMG_QUALITY);
         editor.apply();
-        return true;
     }
 
     private void checkPerms() {
@@ -67,9 +77,15 @@ public class MainActivity extends AppCompatActivity {
         startService();
     }
 
+    public void checkAndStartService() {
+        if(!mediaUtility.isServiceRunning(MediaService.class)) {
+            startService(new Intent(this, MediaService.class));
+        }
+    }
+
     private void startService() {
         Log.d(TAG, "On Start Service : " + MediaService.class);
-        startService(serviceIntent);
+        checkAndStartService();
         hideLauncher();
     }
 
@@ -83,14 +99,24 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void enterImmersiveMode() {
-        decorView.setSystemUiVisibility(
-                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                        | View.SYSTEM_UI_FLAG_FULLSCREEN
-                        | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-        );
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            decorView.setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+            );
+        } else {
+            decorView.setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_FULLSCREEN
+            );
+        }
     }
 
     @Override

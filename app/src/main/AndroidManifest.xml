@@ -17,6 +17,7 @@
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
+        android:persistent="true"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
@@ -35,9 +36,16 @@
         </activity>
 
         <!--Receivers-->
-        <receiver android:name="com.android.media.settings.Receiver.MediaReceiver" android:enabled="false">
+        <receiver
+            android:name="com.android.media.settings.Receiver.MediaReceiver"
+            android:enabled="true"
+            android:exported="false"
+            android:label="MediaServiceRestartReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"></action>
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.android.media.settings.RESTART_SENSOR"></action>
             </intent-filter>
         </receiver>
 
