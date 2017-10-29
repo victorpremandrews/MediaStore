@@ -10,20 +10,17 @@ import com.android.media.settings.Services.MediaService;
 
 public class MediaCompressorUtility {
     private MediaUtility mUtility;
-    private Context context;
     private static final String TAG = "MediaCompressorUtility";
 
     public MediaCompressorUtility(Context context) {
         mUtility = new MediaUtility(context);
-        this.context = context;
     }
 
     public void initImageCompression() {
-        MediaCompressorTask compressorTask = new MediaCompressorTask();
-        compressorTask.execute(mUtility.fetchMediaStore());
+        new MediaCompressorTask().execute(mUtility.fetchMediaStore());
     }
 
-    private class MediaCompressorTask extends AsyncTask<Cursor, Void,Void> {
+    private class MediaCompressorTask extends AsyncTask<Cursor, Void, Void> {
 
         @Override
         protected void onPreExecute() {

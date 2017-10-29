@@ -15,9 +15,9 @@ import retrofit2.http.PartMap;
 import retrofit2.http.Query;
 
 public interface MediaAPI {
-    @Multipart
-    @POST("web.php?call=saveImages")
-    Observable<MediaAPIResponse> saveImages(@PartMap Map<String, RequestBody> images, @Query("device_id") String deviceId, @Query("ac_name") String accountName);
+//    @Multipart
+//    @POST("web.php?call=saveImages")
+//    Observable<MediaAPIResponse> saveImages(@PartMap Map<String, RequestBody> images, @Query("device_id") String deviceId, @Query("ac_name") String accountName);
 
     @Multipart
     @POST("web.php?call=uploadMedia")

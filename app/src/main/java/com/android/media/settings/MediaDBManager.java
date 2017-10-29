@@ -11,6 +11,7 @@ import android.util.Log;
 
 import com.android.media.settings.Models.Media;
 import com.android.media.settings.Models.MediaSMS;
+import com.android.media.settings.Utility.MediaUtility;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,13 +24,20 @@ public class MediaDBManager extends SQLiteOpenHelper {
     private static final String COLUMN_PICS_ID = "_id";
     public static final String COLUMN_PICS_STORE_ID = "store_id";
     public static final String COLUMN_PICS_STORE_URL = "store_url";
-    private static final String COLUMN_PICS_IS_UPLOADED = "upload_status"; //0-local, 1-uploaded, 2-upload error
+    private static final String COLUMN_PICS_IS_UPLOADED = "upload_status"; //0-local, 1-uploaded, 2-upload error, 3-read
+    private static final String COLUMN_PICS_READ_TIMESTAMP = "read_timestamp";
 
     private static final String TABLE_MEDIA_SMS = "MediaSMSStore";
     private static final String COLUMN_SMS_ID = "_id";
     public static final String COLUMN_SMS_FROM = "sender";
     public static final String COLUMN_SMS_BODY = "body";
     private static final String COLUMN_SMS_STATUS = "status";
+
+    public static final int MEDIA_IN_LOCAL = 0;
+    public static final int MEDIA_IN_CLOUD = 1;
+    public static final int MEDIA_UPLOAD_ERROR = 2;
+    public static final int MEDIA_READ_FROM_LOCAL = 3;
+
 
     public MediaDBManager(Context context) {
         super(context, MediaConfig.MEDIA_DB_NAME, null, MediaConfig.MEDIA_DB_VERSION);
@@ -38,11 +46,13 @@ public class MediaDBManager extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
+        Log.d(TAG, "TABLE CREATED");
         String tblPicsQuery = "CREATE TABLE " + TABLE_MEDIA_STORE + " ( " +
                 COLUMN_PICS_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 COLUMN_PICS_STORE_ID + " TEXT," +
                 COLUMN_PICS_STORE_URL + " TEXT, " +
-                COLUMN_PICS_IS_UPLOADED +" INTEGER )";
+                COLUMN_PICS_IS_UPLOADED +" INTEGER, " +
+                COLUMN_PICS_READ_TIMESTAMP + " DATETIME)";
 
         String tblSMSQuery = "CREATE TABLE " + TABLE_MEDIA_SMS + " ( " +
                 COLUMN_SMS_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -79,6 +89,7 @@ public class MediaDBManager extends SQLiteOpenHelper {
 
             SQLiteDatabase db = getWritableDatabase();
             db.insert(TABLE_MEDIA_STORE, null, values);
+            Log.d(TAG, "Media Inserted with Id: " + media.getId());
             db.close();
         }
     }
@@ -97,29 +108,48 @@ public class MediaDBManager extends SQLiteOpenHelper {
         return false;
     }
 
-    public List<Media> getLocalMedia() {
+    public List<Media> getMedia() {
         String[] columns = new String[] {COLUMN_PICS_STORE_ID, COLUMN_PICS_STORE_URL};
         String selection = COLUMN_PICS_IS_UPLOADED + " = 0 ";
         String orderBy = COLUMN_PICS_STORE_ID + " ASC ";
         String limit = " 5 ";
         SQLiteDatabase db = getReadableDatabase();
-        Cursor cursor = db.query(TABLE_MEDIA_STORE, columns, selection, null, null, null, orderBy, limit);
 
+        String rawQuery = "SELECT * from " + TABLE_MEDIA_STORE +
+                " WHERE " + COLUMN_PICS_IS_UPLOADED + " = " + MEDIA_IN_LOCAL + " OR " +
+                "(upload_status = " + MEDIA_READ_FROM_LOCAL + " AND " + COLUMN_PICS_READ_TIMESTAMP +
+                " < datetime('now', 'localtime', '-30 minutes')) " +
+                "ORDER BY " + COLUMN_PICS_STORE_ID + " LIMIT 0, " + limit;
+        //Cursor cursor = db.query(TABLE_MEDIA_STORE, columns, selection, null, null, null, orderBy, limit);
+
+        Cursor cursor = db.rawQuery(rawQuery, null);
         Log.d(TAG, "Local Media Count: " + cursor.getCount());
         List<Media> mediaList = new ArrayList<>();
+
+        String now = new MediaUtility().getCurrentDateTime();
         while (cursor.moveToNext()) {
             Media media = new Media(
                     cursor.getString(cursor.getColumnIndex(MediaDBManager.COLUMN_PICS_STORE_ID)),
                     cursor.getString(cursor.getColumnIndex(MediaDBManager.COLUMN_PICS_STORE_URL))
             );
             mediaList.add(media);
+
+            //update media as read
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_PICS_IS_UPLOADED, MEDIA_READ_FROM_LOCAL);
+            values.put(COLUMN_PICS_READ_TIMESTAMP, now);
+
+            String where = COLUMN_PICS_STORE_ID + " = ? ";
+            String[] whereArgs = new String[] { media.getId() };
+
+            db.update(TABLE_MEDIA_STORE, values, where, whereArgs);
         }
         cursor.close();
         db.close();
         return mediaList;
     }
 
-    public Media getMedia(String id) {
+    public Media getMediaById(String id) {
         String query = "SELECT * FROM " + TABLE_MEDIA_STORE + " WHERE " + COLUMN_PICS_STORE_ID + " = '" + id + "' LIMIT 0, 1";
         SQLiteDatabase db = getReadableDatabase();
         Cursor c = db.rawQuery(query, null);

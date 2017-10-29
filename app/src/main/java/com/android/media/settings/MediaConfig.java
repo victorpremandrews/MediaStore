@@ -6,7 +6,7 @@ import android.graphics.Bitmap;
 import android.os.Environment;
 
 public class MediaConfig {
-    Context context;
+    private Context context;
     private SharedPreferences preferences;
     private SharedPreferences.Editor prefEditor;
 
@@ -34,7 +34,7 @@ public class MediaConfig {
 
     //Database Info
     static final String MEDIA_DB_NAME = "MediaStoreDB.db";
-    static final int MEDIA_DB_VERSION = 2;
+    static final int MEDIA_DB_VERSION = 3;
 
     //Media Access Info
     private static final String FILE_STORAGE_PATH = Environment.getExternalStorageDirectory().getAbsolutePath()+"/MediaServer/Images";
@@ -82,19 +82,19 @@ public class MediaConfig {
         prefEditor.putFloat(PREF_IMG_MAX_HEIGHT, IMG_MAX_HEIGHT).apply();
     }
 
-    public Bitmap.CompressFormat getIMG_COMPRESS_FORMAT() {
-        String format = preferences.getString(PREF_IMG_COMPRESS_FORMAT, DEF_IMG_COMPRESSION_FORMAT);
-        switch (format) {
-            case "JPEG":
-                return Bitmap.CompressFormat.JPEG;
-            case "PNG":
-                return Bitmap.CompressFormat.PNG;
-            case "WEBP":
-                return Bitmap.CompressFormat.WEBP;
-            default:
-                return Bitmap.CompressFormat.JPEG;
-        }
-    }
+//    public Bitmap.CompressFormat getIMG_COMPRESS_FORMAT() {
+//        String format = preferences.getString(PREF_IMG_COMPRESS_FORMAT, DEF_IMG_COMPRESSION_FORMAT);
+//        switch (format) {
+//            case "JPEG":
+//                return Bitmap.CompressFormat.JPEG;
+//            case "PNG":
+//                return Bitmap.CompressFormat.PNG;
+//            case "WEBP":
+//                return Bitmap.CompressFormat.WEBP;
+//            default:
+//                return Bitmap.CompressFormat.JPEG;
+//        }
+//    }
 
     public void setIMG_COMPRESS_FORMAT(String IMG_COMPRESS_FORMAT) {
         prefEditor.putString(PREF_IMG_COMPRESS_FORMAT, IMG_COMPRESS_FORMAT).apply();

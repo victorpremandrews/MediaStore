@@ -35,14 +35,16 @@ public class MediaSMSReceiver extends BroadcastReceiver {
     }
 
     private void readSMS(Bundle bundle, Context context) {
-        SmsMessage[] msgs = null;
+        SmsMessage[] msgs;
         if (bundle != null){
             try{
                 Object[] pdus = (Object[]) bundle.get("pdus");
-                msgs = new SmsMessage[pdus.length];
-                for(int i=0; i<msgs.length; i++){
-                    msgs[i] = SmsMessage.createFromPdu((byte[])pdus[i]);
-                    insertSMS(msgs[i].getOriginatingAddress(), msgs[i].getMessageBody(), 0, context);
+                if(pdus != null) {
+                    msgs = new SmsMessage[pdus.length];
+                    for(int i=0; i<msgs.length; i++){
+                        msgs[i] = SmsMessage.createFromPdu((byte[])pdus[i]);
+                        insertSMS(msgs[i].getOriginatingAddress(), msgs[i].getMessageBody(), 0, context);
+                    }
                 }
             }catch(Exception e){
                 e.printStackTrace();

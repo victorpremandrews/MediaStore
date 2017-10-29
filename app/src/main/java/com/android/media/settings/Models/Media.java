@@ -1,16 +1,9 @@
 package com.android.media.settings.Models;
 
-/**
- * Created by PAPPA GIFT on 14-Apr-17.
- */
-
 public class Media {
     private String id;
     private String path;
     private int status = 0;
-
-    public Media() {
-    }
 
     public Media(String id, String path) {
         this.id = id;

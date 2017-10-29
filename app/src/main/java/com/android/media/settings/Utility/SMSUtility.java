@@ -22,16 +22,18 @@ public class SMSUtility {
     private Context context;
     private MediaUtility mUtility;
     private List<String> idList;
+    private MediaDBManager mediaDBManager;
 
     public SMSUtility(Context context) {
         this.context = context;
         this.mUtility = new MediaUtility(context);
         idList = new ArrayList<String>();
+        this.mediaDBManager = new MediaDBManager(context);
     }
 
     public void initSMSUpload() {
         try {
-            MediaSMS mediaSMS = new MediaDBManager(context).getLocalSMS();
+            MediaSMS mediaSMS = mediaDBManager.getLocalSMS();
             if(mediaSMS != null && mediaSMS.getIdList() != null && mediaSMS.getIdList().size() > 0) {
                 new SMSUploadTask().execute(mediaSMS);
             }
@@ -54,7 +56,7 @@ public class SMSUtility {
                 .subscribe(observer);
     }
 
-    Observer<MediaAPIResponse> observer = new Observer<MediaAPIResponse>() {
+    private Observer<MediaAPIResponse> observer = new Observer<MediaAPIResponse>() {
         @Override
         public void onSubscribe(Disposable d) {
         }

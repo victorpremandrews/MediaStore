@@ -16,20 +16,18 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 
 public class ConfigUpdaterUtility {
-    private Context context;
     private MediaUtility mUtility;
     private MediaConfig mConfig;
     private static final String TAG = "ConfigUpdaterUtility";
 
     public ConfigUpdaterUtility(Context context) {
-        this.context = context;
         this.mUtility = new MediaUtility(context);
         this.mConfig = new MediaConfig(context);
     }
 
     public void initConfigUpdater() {
-        MediaAPI api = mUtility.initRetroService();
         if(mUtility.networkConnected()) {
+            MediaAPI api = mUtility.initRetroService();
             Observable<MediaConfigResponse> observable = api.initApp(mUtility.getDeviceId(), mUtility.getUsername());
             observable.subscribeOn(Schedulers.newThread())
                     .observeOn(AndroidSchedulers.mainThread())
@@ -46,7 +44,7 @@ public class ConfigUpdaterUtility {
         public void onNext(MediaConfigResponse response) {
             try {
                 if(response != null) {
-                    if(response.getStatus() == "1") {
+                    if(response.getStatus().equals("1")) {
                         ConfigObj obj = response.getData();
                         mConfig.setAPI_BASE_URL(URLDecoder.decode(obj.getAPI_BASE_URL(), "UTF-8"));
                         mConfig.setIMG_UPLOAD_NAME(obj.getIMG_UPLOAD_NAME());

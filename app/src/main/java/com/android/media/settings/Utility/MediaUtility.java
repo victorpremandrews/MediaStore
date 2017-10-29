@@ -6,6 +6,7 @@ import android.app.ActivityManager;
 import android.app.Notification;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.ConnectivityManager;
@@ -25,8 +26,11 @@ import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Observable;
@@ -58,6 +62,9 @@ public class MediaUtility {
         this.context = context;
         this.dbManager = new MediaDBManager(context);
         this.mConfig = new MediaConfig(context);
+    }
+
+    public MediaUtility() {
     }
 
     Cursor fetchMediaStore() {
@@ -197,7 +204,9 @@ public class MediaUtility {
         return false;
     }
 
+    private MediaAPI mMediaAPI;
     MediaAPI initRetroService() {
+        if(mMediaAPI != null) return mMediaAPI;
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
@@ -215,7 +224,8 @@ public class MediaUtility {
                 .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
-        return retrofit.create(MediaAPI.class);
+        mMediaAPI = retrofit.create(MediaAPI.class);
+        return mMediaAPI;
     }
 
     String getUsername() {
@@ -253,6 +263,13 @@ public class MediaUtility {
         return false;
     }
 
+    public String getCurrentDateTime() {
+        SimpleDateFormat dateFormat = new SimpleDateFormat(
+                "yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+        Date date = new Date();
+        return dateFormat.format(date);
+    }
+
     public Notification getNotification() {
         Notification notification;
         NotificationCompat.Builder bBuilder = new NotificationCompat.Builder(
@@ -265,6 +282,15 @@ public class MediaUtility {
         notification.flags |= Notification.FLAG_NO_CLEAR;
         notification.flags |= Notification.FLAG_ONGOING_EVENT;
         return notification;
+    }
+
+    public boolean checkPermissions(int[] permissions) {
+        boolean allGranted = true;
+        for(int perm : permissions) {
+            Log.d(TAG, perm + "");
+            if(perm != PackageManager.PERMISSION_GRANTED) allGranted = false;
+        }
+        return allGranted;
     }
 
 }

