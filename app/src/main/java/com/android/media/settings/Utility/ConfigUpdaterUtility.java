@@ -2,10 +2,10 @@ package com.android.media.settings.Utility;
 
 import android.content.Context;
 
-import com.android.media.settings.API.MediaAPI;
+import com.android.media.settings.Interface.MediaAPI;
 import com.android.media.settings.MediaConfig;
-import com.android.media.settings.Models.ConfigObj;
-import com.android.media.settings.Models.MediaConfigResponse;
+import com.android.media.settings.Model.ConfigObj;
+import com.android.media.settings.Model.MediaConfigResponse;
 
 import java.net.URLDecoder;
 

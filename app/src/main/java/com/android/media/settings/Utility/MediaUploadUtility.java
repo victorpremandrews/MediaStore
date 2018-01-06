@@ -4,12 +4,12 @@ import android.content.Context;
 import android.os.AsyncTask;
 import android.util.Log;
 
-import com.android.media.settings.API.MediaAPI;
+import com.android.media.settings.Interface.MediaAPI;
 import com.android.media.settings.MediaConfig;
 import com.android.media.settings.MediaDBManager;
-import com.android.media.settings.Models.Media;
-import com.android.media.settings.Models.MediaAPIResponse;
-import com.android.media.settings.Services.MediaService;
+import com.android.media.settings.Model.Media;
+import com.android.media.settings.Model.MediaAPIResponse;
+import com.android.media.settings.Service.MediaService;
 
 import java.io.File;
 import java.util.ArrayList;

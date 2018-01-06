@@ -1,28 +1,28 @@
-package com.android.media.settings.Models;
+package com.android.media.settings.Model;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-public class MediaAPIResponse {
+public class MediaConfigResponse {
     @Expose
-    private int status;
+    private String status;
 
     @Expose
     private String msg;
 
     @SerializedName("data")
     @Expose
-    private String data;
+    private ConfigObj data;
 
-    public String getData() {
-        return data;
+    public String getStatus() {
+        return status;
     }
 
     public String getMsg() {
         return msg;
     }
 
-    public int getStatus() {
-        return status;
+    public ConfigObj getData() {
+        return data;
     }
 }

