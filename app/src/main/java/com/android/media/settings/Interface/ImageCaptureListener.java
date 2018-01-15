@@ -5,7 +5,7 @@ import java.util.TreeMap;
 
 public interface ImageCaptureListener {
 
-    void onCaptureDone(String pictureUrl, byte[] pictureData);
+    void onCaptureDone(String pictureUrl, String pictureData);
 
-    void onDoneCapturingAllPhotos(TreeMap<String, byte[]> picturesTaken);
+    void onDoneCapturingAllPhotos(TreeMap<String, String> picturesTaken);
 }

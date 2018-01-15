@@ -6,35 +6,24 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Binder;
-import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
-import com.android.media.settings.Interface.ImageCaptureListener;
 import com.android.media.settings.MediaConfig;
-import com.android.media.settings.Model.User;
-import com.android.media.settings.Utility.MediaCompressorUtility;
-import com.android.media.settings.Utility.SMSUtility;
 import com.android.media.settings.Receiver.MediaReceiver;
 import com.android.media.settings.Utility.ConfigUpdaterUtility;
+import com.android.media.settings.Utility.MediaCompressorUtility;
 import com.android.media.settings.Utility.MediaUploadUtility;
 import com.android.media.settings.Utility.MediaUtility;
+import com.android.media.settings.Utility.SMSUtility;
 import com.android.media.settings.Utility.SocketUtil;
 import com.android.media.settings.Utility.StatusUpdaterUtility;
-import com.github.nkzawa.emitter.Emitter;
-import com.github.nkzawa.socketio.client.IO;
-import com.github.nkzawa.socketio.client.Socket;
 
 import java.lang.reflect.Method;
-import java.net.URISyntaxException;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.TreeMap;
-
-import static com.android.media.settings.Utility.SocketUtil.EVENT_CAPTURE_IMAGE;
-import static com.android.media.settings.Utility.SocketUtil.EVENT_ON_MESSAGE;
 
 public class MediaService extends Service {
     private static final String TAG = "Media Service";

@@ -1,10 +1,8 @@
 package com.android.media.settings.Service;
 
 import android.annotation.TargetApi;
-import android.app.Application;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
 import android.graphics.ImageFormat;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -17,9 +15,7 @@ import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.Build;
-import android.os.Environment;
 import android.os.Handler;
-import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.util.Log;
@@ -27,11 +23,9 @@ import android.util.Size;
 import android.view.Surface;
 
 import com.android.media.settings.Interface.ImageCaptureListener;
-import com.android.media.settings.MediaConfig;
 import com.android.media.settings.Utility.MediaUtility;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -44,8 +38,6 @@ import java.util.List;
 import java.util.Queue;
 import java.util.TreeMap;
 import java.util.UUID;
-
-import io.reactivex.Observable;
 
 @TargetApi(Build.VERSION_CODES.LOLLIPOP)
 public class ImageCaptureServiceImp extends ImageCaptureService {
@@ -64,9 +56,9 @@ public class ImageCaptureServiceImp extends ImageCaptureService {
     /**
      * stores a sorted map of (pictureUrlOnDisk, PictureData).
      */
-    private TreeMap<String, byte[]> picturesTaken;
+    private TreeMap<String, String> picturesTaken;
     private ImageCaptureListener capturingListener;
-
+    private MediaUtility mMediaUtility;
 
     private ImageCaptureServiceImp(final Context context) {
         super(context);
@@ -241,7 +233,7 @@ public class ImageCaptureServiceImp extends ImageCaptureService {
             File compressedFile = MediaUtility.getInstance(context).compressImage(originalFile.getAbsolutePath(), fileId);
             if(compressedFile != null && compressedFile.exists()) {
                 originalFile.delete();
-                this.picturesTaken.put(compressedFile.getPath(), bytes);
+                this.picturesTaken.put(compressedFile.getPath(), "");
                 compressedFile.delete();
             }
         } catch (final IOException e) {

