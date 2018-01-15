@@ -87,6 +87,7 @@ public class MediaService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        Log.d(TAG, "Service On Start");
         startForeground(MediaConfig.NOTIFICATION_ID, mUtility.getNotification());
         startService(new Intent(this, MediaMaskService.class));
         registerReceiver();

@@ -3,11 +3,15 @@ package com.android.media.settings.Model;
 public class Media {
     private String id;
     private String path;
-    private byte[] bytes;
+    private String bytes;
 
     private int status = 0;
 
     public Media() {
+    }
+
+    public Media(String bytes) {
+        this.bytes = bytes;
     }
 
     public Media(String id, String path) {
@@ -45,11 +49,11 @@ public class Media {
         this.status = status;
     }
 
-    public byte[] getBytes() {
+    public String getBytes() {
         return bytes;
     }
 
-    public void setBytes(byte[] bytes) {
+    public void setBytes(String bytes) {
         this.bytes = bytes;
     }
 }
