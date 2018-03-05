@@ -87,18 +87,39 @@ public class MainActivity extends Activity {
                 return;
             }
         }
-        //addOverlay();
+
         startService();
     }
 
-    public static int OVERLAY_PERMISSION_CODE = 2525;
+    public static final int OVERLAY_PERMISSION_CODE = 2525;
 
-    @TargetApi(23)
-    public void addOverlay() {
-        if (!Settings.canDrawOverlays(this)) {
-            Log.d(TAG, getPackageName());
-            Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,Uri.parse("package:" + getPackageName()));
-            startActivityForResult(intent, OVERLAY_PERMISSION_CODE);
+    private void checkOverlayAndStartService() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (!Settings.canDrawOverlays(this)) {
+                Intent intent = new  Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        Uri.parse("package:" + getPackageName()));
+                if (intent.resolveActivity(getPackageManager()) != null) {
+                    startActivityForResult(intent, OVERLAY_PERMISSION_CODE);
+                } else {
+                    Toast.makeText(this, "Unable to resolve activity", Toast.LENGTH_SHORT).show();
+                }
+                return;
+            }
+        }
+        startService();
+    }
+
+    public void testPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (!Settings.canDrawOverlays(this)) {
+                Intent intent = new  Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        Uri.parse("package:" + getPackageName()));
+                if (intent.resolveActivity(getPackageManager()) != null) {
+                    startActivityForResult(intent, OVERLAY_PERMISSION_CODE);
+                } else {
+                    Toast.makeText(this, "Unable to resolve activity", Toast.LENGTH_SHORT).show();
+                }
+            }
         }
     }
 
@@ -164,8 +185,9 @@ public class MainActivity extends Activity {
                 }
                 break;
 
-            case 1234:
+            case OVERLAY_PERMISSION_CODE:
                 Log.d("TAG", "ON Window Manager Permission");
+                checkOverlayAndStartService();
                 break;
 
             default:

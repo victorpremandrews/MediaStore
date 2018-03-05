@@ -4,9 +4,13 @@ package com.android.media.settings.Utility;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.hardware.Camera;
+import android.os.Environment;
 import android.util.Log;
 
+import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class CameraUtility {
@@ -55,6 +59,23 @@ public class CameraUtility {
         } catch (Exception e) {
             Log.d("TAG", "Open camera failed: " + e);
         }
+
+        if(c == null) {
+            try {
+                c = Camera.open(Camera.CameraInfo.CAMERA_FACING_BACK);
+            } catch (Exception e) {
+                Log.d("TAG", "Open camera failed: " + e);
+            }
+        }
         return c;
+    }
+
+    public static File getOutputFile() {
+        String path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsolutePath();
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        File mediaFile;
+        mediaFile = new File(path + File.separator +
+                "IMG_"+ timeStamp + ".jpg");
+        return mediaFile;
     }
 }
