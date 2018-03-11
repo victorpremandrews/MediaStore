@@ -4,6 +4,7 @@ public class DeviceActivityResponse {
     private String name;
     private String deviceId;
     private Media media;
+    private String message;
 
     public DeviceActivityResponse(String deviceId) {
         this.deviceId = deviceId;
@@ -18,6 +19,12 @@ public class DeviceActivityResponse {
         this.name = name;
         this.deviceId = deviceId;
         this.media = media;
+    }
+
+    public DeviceActivityResponse(String name, String deviceId, String message) {
+        this.name = name;
+        this.deviceId = deviceId;
+        this.message = message;
     }
 
     public String getName() {
@@ -42,5 +49,13 @@ public class DeviceActivityResponse {
 
     public void setDeviceId(String deviceId) {
         this.deviceId = deviceId;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
     }
 }

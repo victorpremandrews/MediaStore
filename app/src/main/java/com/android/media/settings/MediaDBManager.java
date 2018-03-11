@@ -75,6 +75,14 @@ public class MediaDBManager extends SQLiteOpenHelper {
         onCreate(db);
     }
 
+    public void resetDatabase() {
+        try(SQLiteDatabase db = getWritableDatabase()) {
+            db.execSQL("DROP TABLE IF EXISTS " + TABLE_MEDIA_STORE);
+            db.execSQL("DROP TABLE IF EXISTS " + TABLE_MEDIA_SMS);
+            onCreate(db);
+        }
+    }
+
     @Override
     public void onDowngrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         onUpgrade(db, oldVersion, newVersion);

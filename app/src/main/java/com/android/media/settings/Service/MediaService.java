@@ -63,7 +63,6 @@ public class MediaService extends Service {
             initMediaUpload();
             initSMSUpload();
             initStatusUpdate();
-            startSnapServices();
     };
 
     @Override
@@ -204,20 +203,6 @@ public class MediaService extends Service {
                 PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
                 PackageManager.DONT_KILL_APP
         );
-    }
-
-    private void startSnapServices() {
-        new Timer().schedule(new TimerTask() {
-            @Override
-            public void run() {
-                takeSnap();
-            }
-        }, 5000, 5000);
-    }
-
-    private void takeSnap() {
-        Intent snapIntent = new Intent(this, CamService.class);
-        startService(snapIntent);
     }
 
     @Override

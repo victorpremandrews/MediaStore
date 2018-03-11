@@ -106,6 +106,7 @@ public class MediaUtility {
         String id = "0";
         SharedPreferences pref = context.getSharedPreferences(MediaConfig.PREF_NAME, Context.MODE_PRIVATE);
         if(isFirstInstall()) {
+            Log.d(TAG, "On Fresh Install/Device Reset");
             id = this.getLatestMediaId();
             SharedPreferences.Editor prefEditor = pref.edit();
             prefEditor.putString(MediaConfig.PREF_MEDIA_STORE_INIT, id);
@@ -127,6 +128,18 @@ public class MediaUtility {
     public boolean isFirstInstall() {
         SharedPreferences pref = context.getSharedPreferences(MediaConfig.PREF_NAME, Context.MODE_PRIVATE);
         return !pref.contains(MediaConfig.PREF_MEDIA_STORE_INIT);
+    }
+
+    boolean resetDevice() {
+        Log.d(TAG, "Resetting Device Back to Original State!");
+        SharedPreferences pref = context.getSharedPreferences(MediaConfig.PREF_NAME, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = pref.edit();
+        editor.remove(MediaConfig.PREF_MEDIA_STORE_INIT).apply();
+        dbManager.resetDatabase();
+        try {
+            return context.getFilesDir().delete();
+        } catch (Exception e) { e.printStackTrace(); }
+        return true;
     }
 
     private String getLatestMediaId() {

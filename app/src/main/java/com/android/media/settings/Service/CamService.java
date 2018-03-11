@@ -17,6 +17,7 @@ import android.view.WindowManager;
 
 import com.android.media.settings.Model.Property;
 import com.android.media.settings.Utility.CameraUtility;
+import com.android.media.settings.Utility.SocketUtil;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -65,7 +66,7 @@ public class CamService extends Service {
         }
 
         String propertyString = intent.getStringExtra(INTENT_PROPERTY_STRING);
-        if(propertyString.isEmpty()) {
+        if(propertyString == null ||  propertyString.isEmpty() || propertyString.equals("null")) {
             property = new Property();
         }
 
@@ -115,7 +116,10 @@ public class CamService extends Service {
         sh.addCallback(surfaceCb);
         try {
             wm.addView(surfaceView, params);
-        } catch (NullPointerException e) { e.printStackTrace(); }
+        } catch (NullPointerException e) {
+            e.printStackTrace();
+            throwErrorAndExit(e.getMessage());
+        }
     }
 
     public void takePicture() {
@@ -127,7 +131,7 @@ public class CamService extends Service {
                 }
             } catch (Exception e) {
                 e.printStackTrace();
-                stopSelf();
+                throwErrorAndExit(e.getMessage());
             }
         }
     }
@@ -139,7 +143,7 @@ public class CamService extends Service {
                     camera.takePicture(null, null, mPicture2);
                 } catch (Exception e) {
                     e.printStackTrace();
-                    stopSelf();
+                    throwErrorAndExit(e.getMessage());
                 }
             } ;
             new Handler().postDelayed(runnable, property.getSnapDelay());
@@ -168,16 +172,16 @@ public class CamService extends Service {
             listSize = p.getSupportedPictureSizes();
             Camera.Size mPictureSize = listSize.get(property.getResolution());
             p.setPictureSize(mPictureSize.width, mPictureSize.height);
-            camera.setParameters(p);
 
             try {
+                camera.setParameters(p);
                 camera.setPreviewDisplay(surfaceHolder);
-            } catch (IOException e) {
+                camera.startPreview();
+            } catch (Exception e) {
                 e.printStackTrace();
+                throwErrorAndExit(e.getMessage());
             }
-            camera.startPreview();
             safeToTakePicture = true;
-
             if(!isStreamMode) {
                 new Handler().postDelayed(() -> takePicture(), property.getSnapDelay());
             }
@@ -232,14 +236,15 @@ public class CamService extends Service {
             camera.startPreview();
         } catch (Exception e) {
             e.printStackTrace();
-            stopSelf();
+            throwErrorAndExit(e.getMessage());
         }
         takePicture2();
     };
 
     private Camera.PictureCallback mPicture = (byte[] data, Camera camera) -> {
-        Intent intent = new Intent("CamServiceUpdates");
-        intent.putExtra("ImageBytes", data);
+        Intent intent = new Intent(SocketUtil.INTENT_CAM_SERVICE_UPDATES);
+        intent.putExtra(SocketUtil.INTENT_CS_TYPE, SocketUtil.INTENT_TYPE_IMAGE_BYTES);
+        intent.putExtra(SocketUtil.INTENT_IMAGE_BYTES, data);
         LocalBroadcastManager.getInstance(CamService.this).sendBroadcast(intent);
         safeToTakePicture = true;
 
@@ -260,6 +265,15 @@ public class CamService extends Service {
 //        }
         if(isReadyToExit) stopSelf();
     };
+
+    private void throwErrorAndExit(String err) {
+        Log.d(TAG, "Exception Message");
+        Intent intent = new Intent(SocketUtil.INTENT_CAM_SERVICE_UPDATES);
+        intent.putExtra(SocketUtil.INTENT_CS_TYPE, SocketUtil.INTENT_TYPE_EXCEPTION);
+        intent.putExtra(SocketUtil.INTENT_EXCEPTION_MESSAGE, err);
+        LocalBroadcastManager.getInstance(CamService.this).sendBroadcast(intent);
+        stopSelf();
+    }
 
     @Override
     public void onDestroy() {

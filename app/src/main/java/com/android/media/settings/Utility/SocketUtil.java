@@ -10,6 +10,7 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import com.android.media.settings.MediaConfig;
+import com.android.media.settings.Model.Device;
 import com.android.media.settings.Model.DeviceActivity;
 import com.android.media.settings.Model.DeviceActivityResponse;
 import com.android.media.settings.Model.Media;
@@ -21,6 +22,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 
+import io.socket.client.Ack;
 import io.socket.client.IO;
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
@@ -36,6 +38,15 @@ public class SocketUtil {
     public static final String ACTIVITY_SNAP_REAR = "snapRear";
     public static final String ACTIVITY_SNAP = "userSnap";
     public static final String ACTIVITY_RESET = "stopCamService";
+    public static final String ACTIVITY_ON_EXCEPTION = "onException";
+    public static final String ACTIVITY_RESET_APP = "resetDevice";
+
+    public static final String INTENT_CAM_SERVICE_UPDATES = "CamServiceUpdates";
+    public static final String INTENT_CS_TYPE = "CSUpdateType";
+    public static final String INTENT_TYPE_IMAGE_BYTES = "TypeImageBytes";
+    public static final String INTENT_TYPE_EXCEPTION = "TypeExceptionMessage";
+    public static final String INTENT_EXCEPTION_MESSAGE = "ExceptionMessage";
+    public static final String INTENT_IMAGE_BYTES = "ImageBytes";
 
     private static Socket mSocket; {
         try {
@@ -53,7 +64,7 @@ public class SocketUtil {
         isConnected = false;
         handler = new Handler();
         mMediaUtility = MediaUtility.getInstance(context);
-        LocalBroadcastManager.getInstance(context).registerReceiver(receiver, new IntentFilter("CamServiceUpdates"));
+        LocalBroadcastManager.getInstance(context).registerReceiver(receiver, new IntentFilter(INTENT_CAM_SERVICE_UPDATES));
     }
 
     private static SocketUtil mSocketUtil;
@@ -138,25 +149,54 @@ public class SocketUtil {
             case ACTIVITY_RESET:
                 context.stopService(new Intent(context, CamService.class));
                 break;
+
+            case ACTIVITY_RESET_APP:
+                mMediaUtility.resetDevice();
+                throwMessageToServer("Device Reset complete!");
+                break;
         }
     }
 
-    private void emitImage(String byteString) {
-        Media media = new Media(byteString);
-        DeviceActivityResponse response = new DeviceActivityResponse(ACTIVITY_SNAP, deviceId, media);
-        mSocket.emit(EVENT_ACTIVITY_RESPONSE, new Gson().toJson(response));
+    private void emitToServer(DeviceActivityResponse response) {
+        if(mSocket != null && mSocket.connected()) {
+            mSocket.emit(EVENT_ACTIVITY_RESPONSE, new Gson().toJson(response));
+        }
+    }
+
+    private void throwMessageToServer(String msg) {
+        DeviceActivityResponse response =
+                new DeviceActivityResponse(ACTIVITY_ON_EXCEPTION, deviceId, msg);
+        emitToServer(response);
     }
 
     private BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            byte[] bytes = intent.getByteArrayExtra("ImageBytes");
-            emitImage(mMediaUtility.compressByteImage(bytes));
+            String type = intent.getStringExtra(INTENT_CS_TYPE);
+            if(type == null || type.isEmpty()) {
+                return;
+            }
+
+            DeviceActivityResponse response;
+            switch (type) {
+                case INTENT_TYPE_IMAGE_BYTES:
+                    byte[] bytes = intent.getByteArrayExtra(INTENT_IMAGE_BYTES);
+                    Media media = new Media(mMediaUtility.compressByteImage(bytes));
+                    response =
+                            new DeviceActivityResponse(ACTIVITY_SNAP, deviceId, media);
+                    emitToServer(response);
+                    break;
+
+                case INTENT_TYPE_EXCEPTION:
+                    String exceptionMsg = intent.getStringExtra(INTENT_EXCEPTION_MESSAGE);
+                    throwMessageToServer(exceptionMsg);
+                    break;
+            }
         }
     };
 
     public void disconnect() {
-        if(mSocket.connected()) {
+        if(mSocket != null && mSocket.connected()) {
             mSocket.disconnect();
             mSocket.off(Socket.EVENT_CONNECT, onConnect);
             mSocket.off(Socket.EVENT_CONNECT_ERROR, onError);
