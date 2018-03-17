@@ -77,7 +77,7 @@ public class CameraService extends Service {
     }
 
     private void prepareCamera(int cameraId) {
-        mCamera = CameraUtility.getCameraInstance(cameraId);
+        //mCamera = CameraUtility.getCameraInstance(cameraId);
         if(mCamera != null) {
             SurfaceView surfaceView = new SurfaceView(CameraService.this);
             SurfaceHolder surfaceHolder = surfaceView.getHolder();

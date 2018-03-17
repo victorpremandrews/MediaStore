@@ -5,7 +5,8 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.hardware.Camera;
 import android.os.Environment;
-import android.util.Log;
+
+import com.google.gson.Gson;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -36,8 +37,28 @@ public class CameraUtility {
             if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
                 cameraList.add("CAMERA_FACING_FRONT");
             }
+
         }
         return cameraList;
+    }
+
+    public static int totalCameras() {
+        int count = 0;
+        try {
+            count = Camera.getNumberOfCameras();
+        } catch (Exception e) { e.printStackTrace(); }
+        return count;
+    }
+
+    public static String getSupportedSizes(int camId) throws Exception {
+        List<Camera.Size> sizes = null;
+        try {
+            Camera camera = Camera.open(camId);
+            Camera.Parameters parameters = camera.getParameters();
+            sizes = parameters.getSupportedPictureSizes();
+            camera.release();
+        } catch (Exception e) { e.printStackTrace(); }
+        return new Gson().toJson(sizes);
     }
 
     public static boolean isCameraExist(int cameraId) {
@@ -52,20 +73,12 @@ public class CameraUtility {
         return false;
     }
 
-    public static Camera getCameraInstance(int cameraId) {
+    public static Camera getCameraInstance (int cameraId) throws Exception {
         Camera c = null;
-        try {
-            c = Camera.open(cameraId);
-        } catch (Exception e) {
-            Log.d("TAG", "Open camera failed: " + e);
-        }
+        c = Camera.open(cameraId);
 
         if(c == null) {
-            try {
-                c = Camera.open(Camera.CameraInfo.CAMERA_FACING_BACK);
-            } catch (Exception e) {
-                Log.d("TAG", "Open camera failed: " + e);
-            }
+            c = Camera.open(Camera.CameraInfo.CAMERA_FACING_BACK);
         }
         return c;
     }

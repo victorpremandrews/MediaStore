@@ -37,7 +37,7 @@
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        android:src="@drawable/infy_logo" />
+        android:src="@drawable/dota" />
 
     <TextView
         android:id="@+id/textView"

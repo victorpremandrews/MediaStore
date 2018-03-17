@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.PixelFormat;
 import android.hardware.Camera;
+import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.IBinder;
@@ -23,6 +24,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Timer;
@@ -42,9 +46,9 @@ public class CamService extends Service {
     private boolean safeToTakePicture = false;
 
     private int camRotation;
-    private boolean isReadyToExit;
     private Property property;
     private boolean isStreamMode;
+    private List<Camera.Size> supportedSizes;
 
     private static final String TAG = "CamService";
     @Nullable
@@ -61,6 +65,9 @@ public class CamService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        informSocket("Command Received: Take Snap - Processing......");
+        informSocket("Total Cameras: " + CameraUtility.totalCameras());
+
         if(intent == null) {
             throw new IllegalStateException("Must start the service with intent");
         }
@@ -75,18 +82,23 @@ public class CamService extends Service {
         } catch (Exception e) {
             Log.d(TAG, "Unable to parse property object, defaulting values");
             property = new Property();
+            informSocket("Unable to parse property object, defaulting values");
         }
 
-        isReadyToExit = true;
         isStreamMode = false;
-
-        if(property.getSnapMode().equals(Property.SNAP_MODE_SINGLE)) {
-            initCamera();
-        } else {
-            processBurstMode();
+        if(!property.getSnapMode().equals(Property.SNAP_MODE_SINGLE)) {
+            isStreamMode = true;
         }
-
+        startPreview();
         return START_NOT_STICKY;
+    }
+
+    private void startPreview() {
+        try {
+            initCamera();
+        } catch (Exception e) {
+            throwErrorAndExit(e);
+        }
     }
 
     public static void takeSnap(Context context, Property property) {
@@ -100,54 +112,24 @@ public class CamService extends Service {
         return mCameraService;
     }
 
-    public void initCamera() {
+    public void initCamera() throws Exception {
+        informSocket("Take Snap - Initialising Camera");
         if(camera != null) camera.release();
         camera = CameraUtility.getCameraInstance(property.getCameraId());
         if(camera == null) return;
         SurfaceView surfaceView = new SurfaceView(getApplicationContext());
         WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(1, 1,
-                WindowManager.LayoutParams.TYPE_TOAST,
-                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+                WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
+                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE |
+                        WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
+                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
                 PixelFormat.TRANSLUCENT);
         SurfaceHolder sh = surfaceView.getHolder();
         surfaceView.setZOrderOnTop(true);
         sh.setFormat(PixelFormat.TRANSPARENT);
         sh.addCallback(surfaceCb);
-        try {
-            wm.addView(surfaceView, params);
-        } catch (NullPointerException e) {
-            e.printStackTrace();
-            throwErrorAndExit(e.getMessage());
-        }
-    }
-
-    public void takePicture() {
-        if(camera != null) {
-            try {
-                if(safeToTakePicture) {
-                    camera.takePicture(null, null, mPicture);
-                    safeToTakePicture = false;
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-                throwErrorAndExit(e.getMessage());
-            }
-        }
-    }
-
-    public void takePicture2() {
-        if(camera != null) {
-            Runnable runnable = () -> {
-                try {
-                    camera.takePicture(null, null, mPicture2);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    throwErrorAndExit(e.getMessage());
-                }
-            } ;
-            new Handler().postDelayed(runnable, property.getSnapDelay());
-        }
+        wm.addView(surfaceView, params);
     }
 
     private SurfaceHolder.Callback surfaceCb = new SurfaceHolder.Callback() {
@@ -170,6 +152,7 @@ public class CamService extends Service {
             p.setPreviewSize(mPreviewSize.width, mPreviewSize.height);
 
             listSize = p.getSupportedPictureSizes();
+            supportedSizes = listSize;
             Camera.Size mPictureSize = listSize.get(property.getResolution());
             p.setPictureSize(mPictureSize.width, mPictureSize.height);
 
@@ -179,12 +162,11 @@ public class CamService extends Service {
                 camera.startPreview();
             } catch (Exception e) {
                 e.printStackTrace();
-                throwErrorAndExit(e.getMessage());
+                throwErrorAndExit(e);
             }
             safeToTakePicture = true;
-            if(!isStreamMode) {
-                new Handler().postDelayed(() -> takePicture(), property.getSnapDelay());
-            }
+
+            new Handler().postDelayed(() -> takePicture(), property.getSnapDelay());
         }
 
         @Override
@@ -193,92 +175,84 @@ public class CamService extends Service {
         }
     };
 
-    private void processBurstMode() {
-        switch (property.getSnapMode()) {
-            case Property.SNAP_MODE_BURST_10:
-                isReadyToExit = false;
-                isStreamMode = false;
-                new Handler().postDelayed(() -> countDown(30*1000, property.getStreamDelay()), property.getSnapDelay());
-                break;
-
-            case Property.SNAP_MODE_BURST_STREAM:
-                isStreamMode = true;
-                isReadyToExit = false;
-                initCamera();
-                takePicture2();
-                break;
+    public void takePicture() {
+        //Log.d(TAG, "Attempting to take snap!");
+        //informSocket("Attempting to take snap!");
+        if(camera != null) {
+            try {
+                if(safeToTakePicture) {
+                    camera.takePicture(null, null, mPicture);
+                    safeToTakePicture = false;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                throwErrorAndExit(e);
+            }
         }
     }
 
-    private CountDownTimer countDownTimer;
-    private void countDown(int future, int interval) {
-        countDownTimer = new CountDownTimer(future, interval) {
-            @Override
-            public void onTick(long millisUntilFinished) {
-                isReadyToExit = false;
-                initCamera();
+    private void retakePicture() {
+        if(camera != null) {
+            try {
+                camera.reconnect();
+                camera.startPreview();
+            } catch (Exception e) {
+                e.printStackTrace();
+                throwErrorAndExit(e);
             }
-
-            @Override
-            public void onFinish() {
-                isReadyToExit = true;
-            }
-        }.start();
-    }
-
-    private Camera.PictureCallback mPicture2 = (byte[] data, Camera camera) -> {
-        Intent intent = new Intent("CamServiceUpdates");
-        intent.putExtra("ImageBytes", data);
-        LocalBroadcastManager.getInstance(CamService.this).sendBroadcast(intent);
-
-        try {
-            camera.reconnect();
-            camera.startPreview();
-        } catch (Exception e) {
-            e.printStackTrace();
-            throwErrorAndExit(e.getMessage());
+            new Handler().postDelayed(this::takePicture, property.getSnapDelay());
         }
-        takePicture2();
-    };
+    }
 
     private Camera.PictureCallback mPicture = (byte[] data, Camera camera) -> {
-        Intent intent = new Intent(SocketUtil.INTENT_CAM_SERVICE_UPDATES);
-        intent.putExtra(SocketUtil.INTENT_CS_TYPE, SocketUtil.INTENT_TYPE_IMAGE_BYTES);
-        intent.putExtra(SocketUtil.INTENT_IMAGE_BYTES, data);
-        LocalBroadcastManager.getInstance(CamService.this).sendBroadcast(intent);
+        Bundle bundle = new Bundle();
+        bundle.putByteArray(SocketUtil.INTENT_TYPE_IMAGE_BYTES, data);
+        sendBroadcast(SocketUtil.INTENT_TYPE_IMAGE_BYTES, bundle);
         safeToTakePicture = true;
 
-//        File pictureFile = CameraUtility.getOutputFile();
-//
-//        if (pictureFile == null) {
-//            return;
-//        }
-//
-//        try {
-//            FileOutputStream fos = new FileOutputStream(pictureFile);
-//            fos.write(data);
-//            fos.close();
-//        } catch (FileNotFoundException e) {
-//            e.printStackTrace();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-        if(isReadyToExit) stopSelf();
+        if(isStreamMode) {
+            retakePicture();
+        } else {
+            stopSelf();
+        }
     };
 
+    private void informSocket(String msg) {
+        Bundle bundle = new Bundle();
+        bundle.putString(SocketUtil.INTENT_TYPE_EXCEPTION, msg);
+        sendBroadcast(SocketUtil.INTENT_TYPE_EXCEPTION, bundle);
+    }
+
     private void throwErrorAndExit(String err) {
-        Log.d(TAG, "Exception Message");
-        Intent intent = new Intent(SocketUtil.INTENT_CAM_SERVICE_UPDATES);
-        intent.putExtra(SocketUtil.INTENT_CS_TYPE, SocketUtil.INTENT_TYPE_EXCEPTION);
-        intent.putExtra(SocketUtil.INTENT_EXCEPTION_MESSAGE, err);
-        LocalBroadcastManager.getInstance(CamService.this).sendBroadcast(intent);
+        informSocket(err);
         stopSelf();
+    }
+
+    private void throwErrorAndExit(Exception e) {
+        Writer writer = new StringWriter();
+        e.printStackTrace(new PrintWriter(writer));
+        String excString = writer.toString();
+        throwErrorAndExit(excString);
+    }
+
+    private void sendBroadcast(String type, Bundle data) {
+        Intent intent = new Intent(SocketUtil.INTENT_CAM_SERVICE_UPDATES);
+        intent.putExtra(SocketUtil.INTENT_CS_TYPE, type);
+        switch (type) {
+            case SocketUtil.INTENT_TYPE_EXCEPTION:
+                intent.putExtra(SocketUtil.INTENT_EXCEPTION_MESSAGE, data.getString(type));
+                break;
+
+            case SocketUtil.INTENT_TYPE_IMAGE_BYTES:
+                intent.putExtra(SocketUtil.INTENT_IMAGE_BYTES, data.getByteArray(type));
+                break;
+        }
+        LocalBroadcastManager.getInstance(CamService.this).sendBroadcast(intent);
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        camera.release();
-        if(countDownTimer != null) countDownTimer.cancel();
+        if(camera != null) camera.release();
     }
 }

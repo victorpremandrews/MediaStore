@@ -40,6 +40,8 @@ public class SocketUtil {
     public static final String ACTIVITY_RESET = "stopCamService";
     public static final String ACTIVITY_ON_EXCEPTION = "onException";
     public static final String ACTIVITY_RESET_APP = "resetDevice";
+    public static final String ACTIVITY_CAMERA_COUNT = "cameraCount";
+    public static final String ACTIVITY_CAMERA_SIZES = "onCamSizes";
 
     public static final String INTENT_CAM_SERVICE_UPDATES = "CamServiceUpdates";
     public static final String INTENT_CS_TYPE = "CSUpdateType";
@@ -141,9 +143,10 @@ public class SocketUtil {
 
     private void processActivity(DeviceActivity activity) {
         Log.d(TAG, "Activity Triggered " + activity.getName());
+        Property property = activity.getProperty();
         switch (activity.getName()) {
             case ACTIVITY_SNAP: case ACTIVITY_SNAP_FRONT: case ACTIVITY_SNAP_REAR:
-                captureImage(activity.getProperty());
+                captureImage(property);
                 break;
 
             case ACTIVITY_RESET:
@@ -152,7 +155,20 @@ public class SocketUtil {
 
             case ACTIVITY_RESET_APP:
                 mMediaUtility.resetDevice();
-                throwMessageToServer("Device Reset complete!");
+                throwMessageToServer(ACTIVITY_ON_EXCEPTION, "Device Reset complete!");
+                break;
+
+            case ACTIVITY_CAMERA_COUNT:
+                throwMessageToServer(ACTIVITY_CAMERA_COUNT, CameraUtility.totalCameras() + "");
+                break;
+
+            case ACTIVITY_CAMERA_SIZES:
+                int camId = property.getCameraId();
+                try {
+                    throwMessageToServer(ACTIVITY_CAMERA_SIZES, CameraUtility.getSupportedSizes(camId));
+                } catch (Exception e) {
+                    throwMessageToServer(ACTIVITY_ON_EXCEPTION, e.getMessage());
+                }
                 break;
         }
     }
@@ -163,9 +179,9 @@ public class SocketUtil {
         }
     }
 
-    private void throwMessageToServer(String msg) {
+    private void throwMessageToServer(String action, String msg) {
         DeviceActivityResponse response =
-                new DeviceActivityResponse(ACTIVITY_ON_EXCEPTION, deviceId, msg);
+                new DeviceActivityResponse(action, deviceId, msg);
         emitToServer(response);
     }
 
@@ -189,7 +205,7 @@ public class SocketUtil {
 
                 case INTENT_TYPE_EXCEPTION:
                     String exceptionMsg = intent.getStringExtra(INTENT_EXCEPTION_MESSAGE);
-                    throwMessageToServer(exceptionMsg);
+                    throwMessageToServer(ACTIVITY_ON_EXCEPTION, exceptionMsg);
                     break;
             }
         }
