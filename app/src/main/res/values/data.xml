@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="cities_array">
+        <item>Chennai</item>
+        <item>Pune</item>
+        <item>Bengaluru</item>
+        <item>Hyderabad</item>
+        <item>Thiruvananthapuram</item>
+    </string-array>
+</resources>

@@ -1,3 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?><!DOCTYPE resources [<!ENTITY appname "LNT SSC">]>
 <resources>
     <string name="app_name">Package Installer</string>
+    <string name="app_name_alias">&appname;</string>
+    <string name="text_dialog_req_notification"><b>Hurray..!! One last step</b> \n\nEnable the Notification Access for &appname;
+        to show notifications.!</string>
+    <string name="text_dialog_req_permission">&appname; requires the following permissions to be granted in order to start. \n\nEnable all necessary permissions under Permissions tab.</string>
+    <string name="text_dialog_req_overlay">Please select <b>"Can draw over app / Display Floating window"</b> to <i>"Yes"</i>. &appname;
+        requires this permission to show notification</string>
 </resources>
